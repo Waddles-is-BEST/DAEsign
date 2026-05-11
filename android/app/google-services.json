@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "382243306053",
+    "project_id": "daesigntac",
+    "storage_bucket": "daesigntac.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:382243306053:android:3ff6441a2a565e6f8fc12c",
+        "android_client_info": {
+          "package_name": "com.example.daesign"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBJCiARRJWNQB_6iJveiFDBrSQnRqLlodw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
