@@ -4,6 +4,7 @@ import 'firebase_options.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'display.dart';
 import 'login.dart';
+import 'daesign_loading.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,8 +23,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'News Feed',
-      home: const LoginPage(),
+      title: 'DÆsign',
+      home: const DaeSignLoadingPage(),  // Change this line
     );
   }
 }
