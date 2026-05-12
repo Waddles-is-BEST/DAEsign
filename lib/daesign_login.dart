@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'services/auth_service.dart';
+import 'daesign_home.dart';
+import 'daesign_register_initial.dart';
 
 void main() {
   runApp(const MyApp());
@@ -32,6 +35,9 @@ class _DaeSignLoginPageState extends State<DaeSignLoginPage>
     with SingleTickerProviderStateMixin {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final authService = AuthService();
+  bool isLoading = false;
+  bool _obscurePassword = true;
 
   late AnimationController _animationController;
   late Animation<Offset> _slideAnimation;
@@ -56,6 +62,92 @@ class _DaeSignLoginPageState extends State<DaeSignLoginPage>
     );
 
     _animationController.forward();
+  }
+
+  Future<void> _handleLogin() async {
+    String email = _emailController.text.trim();
+    String password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all fields')),
+      );
+      return;
+    }
+
+    // Email validation
+    if (!_isValidEmail(email)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid email address')),
+      );
+      return;
+    }
+
+    if (password.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password must be at least 6 characters')),
+      );
+      return;
+    }
+
+    setState(() => isLoading = true);
+    try {
+      await authService.loginWithEmailPassword(
+        email: email,
+        password: password,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Login successful!')),
+        );
+        // Navigate to home page
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DaeSignHomePage()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    setState(() => isLoading = true);
+    try {
+      final userCredential = await authService.signInWithGoogle();
+      if (userCredential != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Google login successful!')),
+        );
+        // Navigate to home page
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DaeSignHomePage()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+  bool _isValidEmail(String email) {
+    final emailRegex = RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    );
+    return emailRegex.hasMatch(email) && email.length <= 254;
   }
 
   @override
@@ -126,6 +218,7 @@ class _DaeSignLoginPageState extends State<DaeSignLoginPage>
                           label: 'Email',
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
+                          maxLength: 100,
                         ),
 
                         const SizedBox(height: 44),
@@ -133,7 +226,22 @@ class _DaeSignLoginPageState extends State<DaeSignLoginPage>
                         _UnderlineField(
                           label: 'Password',
                           controller: _passwordController,
-                          obscureText: true,
+                          obscureText: _obscurePassword,
+                          maxLength: 50,
+                          suffixIcon: IconButton(
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                              color: Colors.grey.shade600,
+                              size: 28,
+                            ),
+                          ),
                         ),
 
                         const SizedBox(height: 54),
@@ -144,13 +252,7 @@ class _DaeSignLoginPageState extends State<DaeSignLoginPage>
                             child: SizedBox(
                               height: 54,
                               child: OutlinedButton(
-                                onPressed: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Front-end only for now'),
-                                    ),
-                                  );
-                                },
+                                onPressed: isLoading ? null : _handleLogin,
                                 style: OutlinedButton.styleFrom(
                                   side: const BorderSide(
                                     color: Colors.black,
@@ -162,11 +264,52 @@ class _DaeSignLoginPageState extends State<DaeSignLoginPage>
                                   backgroundColor: Colors.white,
                                   foregroundColor: Colors.black,
                                 ),
+                                child: isLoading
+                                    ? const SizedBox(
+                                        height: 24,
+                                        width: 24,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                                        ),
+                                      )
+                                    : const Text(
+                                        'Validate',
+                                        style: TextStyle(
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        Center(
+                          child: FractionallySizedBox(
+                            widthFactor: 0.72,
+                            child: SizedBox(
+                              height: 54,
+                              child: OutlinedButton(
+                                onPressed: isLoading ? null : _handleGoogleSignIn,
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(
+                                    color: Colors.grey,
+                                    width: 1.4,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: Colors.black,
+                                ),
                                 child: const Text(
-                                  'Validate',
+                                  'G  Sign in with Google',
                                   style: TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.w700,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
@@ -188,9 +331,10 @@ class _DaeSignLoginPageState extends State<DaeSignLoginPage>
                               ),
                               GestureDetector(
                                 onTap: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Register tapped'),
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const DaeSignRegisterInitialPage(),
                                     ),
                                   );
                                 },
@@ -224,12 +368,16 @@ class _UnderlineField extends StatelessWidget {
     required this.controller,
     this.keyboardType,
     this.obscureText = false,
+    this.suffixIcon,
+    this.maxLength,
   });
 
   final String label;
   final TextEditingController controller;
   final TextInputType? keyboardType;
   final bool obscureText;
+  final Widget? suffixIcon;
+  final int? maxLength;
 
   @override
   Widget build(BuildContext context) {
@@ -251,10 +399,12 @@ class _UnderlineField extends StatelessWidget {
           controller: controller,
           keyboardType: keyboardType,
           obscureText: obscureText,
+          maxLength: maxLength,
           style: const TextStyle(fontSize: 18),
           decoration: InputDecoration(
             isDense: true,
             contentPadding: const EdgeInsets.only(bottom: 12),
+            suffixIcon: suffixIcon,
             border: UnderlineInputBorder(
               borderSide: BorderSide(color: lineColor, width: 1),
             ),
@@ -270,3 +420,4 @@ class _UnderlineField extends StatelessWidget {
     );
   }
 }
+

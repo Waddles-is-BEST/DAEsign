@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'services/auth_service.dart';
 
 enum DaeSignDrawerItem {
   home,
+  profile,
   createPost,
   search,
   notifications,
@@ -18,6 +20,8 @@ class DaeSignDrawer extends StatelessWidget {
 
   final DaeSignDrawerItem activeItem;
   final ValueChanged<DaeSignDrawerItem>? onItemTap;
+  
+  static final authService = AuthService();
 
   void _handleTap(BuildContext context, DaeSignDrawerItem item) {
     Navigator.pop(context);
@@ -31,6 +35,9 @@ class DaeSignDrawer extends StatelessWidget {
     switch (item) {
       case DaeSignDrawerItem.home:
         label = 'Home tapped';
+        break;
+      case DaeSignDrawerItem.profile:
+        label = 'Profile tapped';
         break;
       case DaeSignDrawerItem.createPost:
         label = 'Create Post tapped';
@@ -64,21 +71,35 @@ class DaeSignDrawer extends StatelessWidget {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(18, 8, 18, 12),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'DÆsign',
-                    style: GoogleFonts.titilliumWeb(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.black,
-                      letterSpacing: 0.5,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        'DÆsign',
+                        style: GoogleFonts.titilliumWeb(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w400,
+                          color: Colors.black,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close, size: 34, color: Colors.black),
+                      ),
+                    ],
                   ),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close, size: 34, color: Colors.black),
+                  const SizedBox(height: 8),
+                  Text(
+                    DaeSignDrawer.authService.currentUser?.displayName ?? 'User',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black,
+                    ),
                   ),
                 ],
               ),
@@ -95,6 +116,13 @@ class DaeSignDrawer extends StatelessWidget {
                       label: 'Home',
                       selected: activeItem == DaeSignDrawerItem.home,
                       onTap: () => _handleTap(context, DaeSignDrawerItem.home),
+                    ),
+                    const SizedBox(height: 14),
+                    _DrawerItem(
+                      icon: Icons.person,
+                      label: 'Profile',
+                      selected: activeItem == DaeSignDrawerItem.profile,
+                      onTap: () => _handleTap(context, DaeSignDrawerItem.profile),
                     ),
                     const SizedBox(height: 14),
                     _DrawerItem(

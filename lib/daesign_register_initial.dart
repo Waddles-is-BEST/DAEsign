@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'services/auth_service.dart';
+import 'daesign_login.dart';
+import 'daesign_home.dart';
+import 'daesign_profile.dart';
 
 void main() {
   runApp(const MyApp());
@@ -34,9 +38,19 @@ class _DaeSignRegisterInitialPageState extends State<DaeSignRegisterInitialPage>
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
+  final authService = AuthService();
+  bool isLoading = false;
+  bool _isGoogleSignUp = false;
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+
+  bool _isValidEmail(String email) {
+    final emailRegex = RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    );
+    return emailRegex.hasMatch(email) && email.length <= 254;
+  }
 
   @override
   void dispose() {
@@ -110,52 +124,59 @@ class _DaeSignRegisterInitialPageState extends State<DaeSignRegisterInitialPage>
                         label: 'Email',
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
+                        maxLength: 100,
+                        enabled: !_isGoogleSignUp,
                       ),
                       const SizedBox(height: 34),
                       _UnderlineField(
                         label: 'Username',
                         controller: _usernameController,
+                        maxLength: 50,
                       ),
-                      const SizedBox(height: 34),
-                      _UnderlineField(
-                        label: 'Password',
-                        controller: _passwordController,
-                        obscureText: _obscurePassword,
-                        suffixIcon: IconButton(
-                          onPressed: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
-                            color: Colors.grey.shade600,
-                            size: 38,
+                      if (!_isGoogleSignUp) ...[
+                        const SizedBox(height: 34),
+                        _UnderlineField(
+                          label: 'Password',
+                          controller: _passwordController,
+                          obscureText: _obscurePassword,
+                          maxLength: 50,
+                          suffixIcon: IconButton(
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                              color: Colors.grey.shade600,
+                              size: 38,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 34),
-                      _UnderlineField(
-                        label: 'Confirm Password',
-                        controller: _confirmPasswordController,
-                        obscureText: _obscureConfirmPassword,
-                        suffixIcon: IconButton(
-                          onPressed: () {
-                            setState(() {
-                              _obscureConfirmPassword = !_obscureConfirmPassword;
-                            });
-                          },
-                          icon: Icon(
-                            _obscureConfirmPassword
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
-                            color: Colors.grey.shade600,
-                            size: 38,
+                        const SizedBox(height: 34),
+                        _UnderlineField(
+                          label: 'Confirm Password',
+                          controller: _confirmPasswordController,
+                          obscureText: _obscureConfirmPassword,
+                          maxLength: 50,
+                          suffixIcon: IconButton(
+                            onPressed: () {
+                              setState(() {
+                                _obscureConfirmPassword = !_obscureConfirmPassword;
+                              });
+                            },
+                            icon: Icon(
+                              _obscureConfirmPassword
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                              color: Colors.grey.shade600,
+                              size: 38,
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                       const SizedBox(height: 60),
                       Center(
                         child: FractionallySizedBox(
@@ -163,13 +184,7 @@ class _DaeSignRegisterInitialPageState extends State<DaeSignRegisterInitialPage>
                           child: SizedBox(
                             height: 54,
                             child: OutlinedButton(
-                              onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Front-end only for now'),
-                                  ),
-                                );
-                              },
+                              onPressed: isLoading ? null : _handleRegister,
                               style: OutlinedButton.styleFrom(
                                 side: const BorderSide(
                                   color: Colors.black,
@@ -181,11 +196,50 @@ class _DaeSignRegisterInitialPageState extends State<DaeSignRegisterInitialPage>
                                 backgroundColor: Colors.white,
                                 foregroundColor: Colors.black,
                               ),
+                              child: isLoading
+                                  ? const SizedBox(
+                                      height: 24,
+                                      width: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Register',
+                                      style: TextStyle(
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Center(
+                        child: FractionallySizedBox(
+                          widthFactor: 0.72,
+                          child: SizedBox(
+                            height: 54,
+                            child: OutlinedButton(
+                              onPressed: isLoading ? null : _handleGoogleSignUp,
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(
+                                  color: Colors.grey,
+                                  width: 1.4,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                backgroundColor: Colors.white,
+                                foregroundColor: Colors.black,
+                              ),
                               child: const Text(
-                                'Register',
+                                'G  Sign up with Google',
                                 style: TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w700,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
@@ -205,9 +259,10 @@ class _DaeSignRegisterInitialPageState extends State<DaeSignRegisterInitialPage>
                             ),
                             GestureDetector(
                               onTap: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Sign In tapped'),
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const DaeSignLoginPage(),
                                   ),
                                 );
                               },
@@ -233,6 +288,169 @@ class _DaeSignRegisterInitialPageState extends State<DaeSignRegisterInitialPage>
       ),
     );
   }
+
+  Future<void> _handleRegister() async {
+    String email = _emailController.text.trim();
+    String username = _usernameController.text.trim();
+    String password = _passwordController.text;
+    String confirmPassword = _confirmPasswordController.text;
+
+    // For Google sign-up, only require username
+    if (_isGoogleSignUp) {
+      if (username.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter a username')),
+        );
+        return;
+      }
+
+      if (username.length < 3) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Username must be at least 3 characters')),
+        );
+        return;
+      }
+
+      if (username.length > 50) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Username must be less than 50 characters')),
+        );
+        return;
+      }
+
+      setState(() => isLoading = true);
+      try {
+        // Update displayName for Google user
+        await authService.currentUser?.updateDisplayName(username);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Registration successful!')),
+          );
+          // Navigate to profile page
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const DaeSignProfilePage()),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e')),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => isLoading = false);
+      }
+      return;
+    }
+
+    // Regular email/password registration
+    if (email.isEmpty || username.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all fields')),
+      );
+      return;
+    }
+
+    // Email validation
+    if (!_isValidEmail(email)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid email address')),
+      );
+      return;
+    }
+
+    // Username validation (3-50 characters)
+    if (username.length < 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Username must be at least 3 characters')),
+      );
+      return;
+    }
+
+    if (username.length > 50) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Username must be less than 50 characters')),
+      );
+      return;
+    }
+
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Passwords do not match')),
+      );
+      return;
+    }
+
+    if (password.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password must be at least 6 characters')),
+      );
+      return;
+    }
+
+    setState(() => isLoading = true);
+    try {
+      await authService.registerWithEmailPassword(
+        email: email,
+        password: password,
+        fullName: username,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Registration successful!')),
+        );
+        // Clear fields
+        _emailController.clear();
+        _usernameController.clear();
+        _passwordController.clear();
+        _confirmPasswordController.clear();
+        // Navigate to profile page
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DaeSignProfilePage()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+  Future<void> _handleGoogleSignUp() async {
+    setState(() => isLoading = true);
+    try {
+      final userCredential = await authService.signInWithGoogle();
+      if (userCredential != null && mounted) {
+        // Auto-fill email from Google account
+        _emailController.text = userCredential.user?.email ?? '';
+        
+        setState(() {
+          _isGoogleSignUp = true;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Google account linked! Please enter your username.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
 }
 
 class _UnderlineField extends StatelessWidget {
@@ -242,6 +460,8 @@ class _UnderlineField extends StatelessWidget {
     this.keyboardType,
     this.obscureText = false,
     this.suffixIcon,
+    this.maxLength,
+    this.enabled = true,
   });
 
   final String label;
@@ -249,6 +469,8 @@ class _UnderlineField extends StatelessWidget {
   final TextInputType? keyboardType;
   final bool obscureText;
   final Widget? suffixIcon;
+  final int? maxLength;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -267,9 +489,11 @@ class _UnderlineField extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         TextField(
+          enabled: enabled,
           controller: controller,
           keyboardType: keyboardType,
           obscureText: obscureText,
+          maxLength: maxLength,
           style: const TextStyle(fontSize: 18),
           decoration: InputDecoration(
             isDense: true,
@@ -287,6 +511,9 @@ class _UnderlineField extends StatelessWidget {
             ),
             focusedBorder: const UnderlineInputBorder(
               borderSide: BorderSide(color: Colors.black, width: 1.2),
+            ),
+            disabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade400, width: 1),
             ),
           ),
         ),

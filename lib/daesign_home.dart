@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'daesign_drawer.dart';
 import 'daesign_navcircle.dart';
+import 'services/auth_service.dart';
+import 'daesign_login.dart';
+import 'daesign_profile.dart';
 
 void main() {
   runApp(const MaterialApp(
@@ -10,8 +13,15 @@ void main() {
   ));
 }
 
-class DaeSignHomePage extends StatelessWidget {
+class DaeSignHomePage extends StatefulWidget {
   const DaeSignHomePage({super.key});
+
+  @override
+  State<DaeSignHomePage> createState() => _DaeSignHomePageState();
+}
+
+class _DaeSignHomePageState extends State<DaeSignHomePage> {
+  final authService = AuthService();
 
   static final List<Map<String, String>> exploreItems = [
     {
@@ -66,6 +76,50 @@ class DaeSignHomePage extends StatelessWidget {
     },
   ];
 
+  Future<void> _handleDrawerItemTap(DaeSignDrawerItem item) async {
+    switch (item) {
+      case DaeSignDrawerItem.signOut:
+        _handleLogout();
+        break;
+      case DaeSignDrawerItem.profile:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DaeSignProfilePage()),
+        );
+        break;
+      case DaeSignDrawerItem.home:
+      case DaeSignDrawerItem.createPost:
+      case DaeSignDrawerItem.search:
+      case DaeSignDrawerItem.notifications:
+        // Handle other items
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${item.toString().split('.').last} tapped')),
+        );
+        break;
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    try {
+      await authService.signOut();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Logged out successfully')),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DaeSignLoginPage()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error logging out: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = GoogleFonts.titilliumWebTextTheme(Theme.of(context).textTheme);
@@ -73,8 +127,9 @@ class DaeSignHomePage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      drawer: const DaeSignDrawer(
+      drawer: DaeSignDrawer(
         activeItem: DaeSignDrawerItem.home,
+        onItemTap: _handleDrawerItemTap,
       ),
       appBar: AppBar(
         elevation: 1,
@@ -100,8 +155,9 @@ class DaeSignHomePage extends StatelessWidget {
             padding: const EdgeInsets.only(right: 12),
             child: GestureDetector(
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Profile tapped')),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const DaeSignProfilePage()),
                 );
               },
               child: const CircleAvatar(
