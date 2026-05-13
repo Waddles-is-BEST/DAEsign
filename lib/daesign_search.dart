@@ -91,6 +91,7 @@ class _DaeSignSearchPageState extends State<DaeSignSearchPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       drawer: const DaeSignDrawer(activeItem: DaeSignDrawerItem.search),
+
       appBar: AppBar(
         elevation: 1,
         backgroundColor: Colors.white,

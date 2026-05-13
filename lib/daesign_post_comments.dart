@@ -49,6 +49,7 @@ class _DaeSignPostCommentsPageState extends State<DaeSignPostCommentsPage> {
       drawer: const DaeSignDrawer(
         activeItem: DaeSignDrawerItem.home,
       ),
+
       appBar: AppBar(
         elevation: 1,
         backgroundColor: Colors.white,

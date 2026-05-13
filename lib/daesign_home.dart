@@ -57,58 +57,6 @@ class _DaeSignHomePageState extends State<DaeSignHomePage> {
     },
   ];
 
-  Future<void> _handleDrawerItemTap(DaeSignDrawerItem item) async {
-    switch (item) {
-      case DaeSignDrawerItem.signOut:
-        _handleLogout();
-        break;
-      case DaeSignDrawerItem.profile:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const DaeSignProfilePage()),
-        );
-        break;
-      case DaeSignDrawerItem.createPost:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const DaeSignCreatePage()),
-        );
-        break;
-      case DaeSignDrawerItem.search:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const DaeSignSearchPage()),
-        );
-        break;
-      case DaeSignDrawerItem.home:
-      case DaeSignDrawerItem.notifications:
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${item.toString().split('.').last} tapped')),
-        );
-        break;
-    }
-  }
-
-  Future<void> _handleLogout() async {
-    try {
-      await authService.signOut();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Logged out successfully')),
-        );
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const DaeSignLoginPage()),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error logging out: $e')),
-        );
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -117,10 +65,7 @@ class _DaeSignHomePageState extends State<DaeSignHomePage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      drawer: DaeSignDrawer(
-        activeItem: DaeSignDrawerItem.home,
-        onItemTap: _handleDrawerItemTap,
-      ),
+      drawer: const DaeSignDrawer(activeItem: DaeSignDrawerItem.home),
       appBar: AppBar(
         elevation: 1,
         backgroundColor: Colors.white,

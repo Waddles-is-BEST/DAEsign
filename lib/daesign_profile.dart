@@ -91,10 +91,9 @@ class _DaeSignProfilePageState extends State<DaeSignProfilePage> {
           ),
           centerTitle: true,
         ),
-      drawer: DaeSignDrawer(
-        activeItem: _activeDrawerItem,
-        onItemTap: _handleDrawerItemTap,
-      ),
+        drawer: const DaeSignDrawer(activeItem: DaeSignDrawerItem.profile),
+
+
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(24.0),

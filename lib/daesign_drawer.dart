@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'services/auth_service.dart';
+import 'daesign_home.dart';
+import 'daesign_profile.dart';
+import 'daesign_create.dart';
+import 'daesign_search.dart';
+import 'daesign_login.dart';
 
 enum DaeSignDrawerItem {
   home,
@@ -15,47 +20,66 @@ class DaeSignDrawer extends StatelessWidget {
   const DaeSignDrawer({
     super.key,
     required this.activeItem,
-    this.onItemTap,
   });
 
   final DaeSignDrawerItem activeItem;
-  final ValueChanged<DaeSignDrawerItem>? onItemTap;
-  
+
   static final authService = AuthService();
 
-  void _handleTap(BuildContext context, DaeSignDrawerItem item) {
+  Future<void> _handleTap(BuildContext context, DaeSignDrawerItem item) async {
     Navigator.pop(context);
-    if (onItemTap != null) {
-      onItemTap!(item);
-      return;
-    }
 
-    // Front-end fallback behavior
-    final String label;
     switch (item) {
       case DaeSignDrawerItem.home:
-        label = 'Home tapped';
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DaeSignHomePage()),
+        );
         break;
       case DaeSignDrawerItem.profile:
-        label = 'Profile tapped';
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DaeSignProfilePage()),
+        );
         break;
       case DaeSignDrawerItem.createPost:
-        label = 'Create Post tapped';
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DaeSignCreatePage()),
+        );
         break;
       case DaeSignDrawerItem.search:
-        label = 'Search tapped';
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DaeSignSearchPage()),
+        );
         break;
       case DaeSignDrawerItem.notifications:
-        label = 'Notifications tapped';
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Notifications tapped')),
+        );
         break;
       case DaeSignDrawerItem.signOut:
-        label = 'Sign Out tapped';
+        try {
+          await authService.signOut();
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Logged out successfully')),
+            );
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const DaeSignLoginPage()),
+            );
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Error logging out: $e')),
+            );
+          }
+        }
         break;
     }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(label)),
-    );
   }
 
   @override
