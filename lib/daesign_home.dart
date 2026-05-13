@@ -400,23 +400,13 @@ class _DaeSignHomePageState extends State<DaeSignHomePage> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      DaeSignNavCircle(icon: Icons.home, label: 'Home', selected: true, onTap: () {}),
+                      DaeSignNavCircle(icon: Icons.home, label: 'Home', target: DaeSignNavTarget.home, selected: true),
                       const SizedBox(width: 16),
-                      DaeSignNavCircle(icon: Icons.add, label: 'Add', selected: false, onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const DaeSignCreatePage()),
-                        );
-                      }),
+                      DaeSignNavCircle(icon: Icons.add, label: 'Add', target: DaeSignNavTarget.create, selected: false),
                       const SizedBox(width: 16),
-                      DaeSignNavCircle(icon: Icons.search, label: 'Search', selected: false, onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const DaeSignSearchPage()),
-                        );
-                      }),
+                      DaeSignNavCircle(icon: Icons.search, label: 'Search', target: DaeSignNavTarget.search, selected: false),
                       const SizedBox(width: 16),
-                      DaeSignNavCircle(icon: Icons.notifications, label: 'Alerts', selected: false, onTap: () {}),
+                      DaeSignNavCircle(icon: Icons.notifications, label: 'Alerts', target: DaeSignNavTarget.alerts, selected: false),
                     ],
                   ),
                 ),
