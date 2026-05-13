@@ -77,7 +77,7 @@ class DaeSignDrawer extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        'DÆsign',
+                        '𝔻Æ𝕤𝕚𝕘𝕟',
                         style: GoogleFonts.titilliumWeb(
                           fontSize: 28,
                           fontWeight: FontWeight.w400,

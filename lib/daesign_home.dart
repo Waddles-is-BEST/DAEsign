@@ -9,6 +9,8 @@ import 'daesign_profile.dart';
 import 'daesign_create.dart';
 import 'daesign_search.dart';
 import 'daesign_post_information.dart';
+import 'services/likes_service.dart';
+
 
 void main() {
   runApp(const MaterialApp(
@@ -506,29 +508,66 @@ class _PostCard extends StatefulWidget {
 class _PostCardState extends State<_PostCard> {
   late bool _isLiked;
   late int _likes;
+  bool _isLoadingLike = false;
 
   @override
   void initState() {
     super.initState();
     _isLiked = false;
     _likes = widget.likes;
+    _checkIfUserLiked();
   }
 
-  void _toggleLike() {
+  Future<void> _checkIfUserLiked() async {
+    if (widget.postId == null || widget.postId!.isEmpty) return;
+
+    final hasLiked = await LikesService.hasUserLikedPost(widget.postId!);
+    if (mounted) {
+      setState(() {
+        _isLiked = hasLiked;
+      });
+    }
+  }
+
+  Future<void> _toggleLike() async {
+    if (widget.postId == null || widget.postId!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error: Invalid post ID')),
+      );
+      return;
+    }
+
+    if (_isLoadingLike) return; // Prevent multiple taps
+
+    setState(() {
+      _isLoadingLike = true;
+    });
+
+    // Optimistic update for better UX
+    final wasLiked = _isLiked;
     setState(() {
       _isLiked = !_isLiked;
       _likes = _isLiked ? _likes + 1 : _likes - 1;
     });
-    
-    // Save to Firestore
-    if (widget.postId != null && widget.postId!.isNotEmpty) {
-      final firestore = FirebaseFirestore.instance;
-      final postRef = firestore.collection('posts').doc(widget.postId!);
-      postRef.update({
-        'likes': _likes,
-      }).catchError((e) {
-        print('Error updating likes: $e');
+
+    // Perform the actual like/unlike operation
+    final success = await LikesService.toggleLike(widget.postId!, wasLiked);
+
+    setState(() {
+      _isLoadingLike = false;
+    });
+
+    if (!success) {
+      // Revert on failure
+      setState(() {
+        _isLiked = wasLiked;
+        _likes = wasLiked ? _likes + 1 : _likes - 1;
       });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error updating like')),
+        );
+      }
     }
   }
 
@@ -566,21 +605,21 @@ class _PostCardState extends State<_PostCard> {
                 aspectRatio: 3 / 4,
                 child: widget.imageUrl != null
                     ? Image.network(
-                        widget.imageUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          print('Error loading image: ${widget.imageUrl}');
-                          print('Error: $error');
-                          return Container(
-                            color: Colors.grey.shade300,
-                            child: const Icon(Icons.image, size: 48, color: Colors.white70),
-                          );
-                        },
-                      )
+                  widget.imageUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    print('Error loading image: ${widget.imageUrl}');
+                    print('Error: $error');
+                    return Container(
+                      color: Colors.grey.shade300,
+                      child: const Icon(Icons.image, size: 48, color: Colors.white70),
+                    );
+                  },
+                )
                     : Container(
-                        color: Colors.grey.shade300,
-                        child: const Icon(Icons.image, size: 48, color: Colors.white70),
-                      ),
+                  color: Colors.grey.shade300,
+                  child: const Icon(Icons.image, size: 48, color: Colors.white70),
+                ),
               ),
             ),
 
@@ -612,7 +651,7 @@ class _PostCardState extends State<_PostCard> {
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       GestureDetector(
-                        onTap: _toggleLike,
+                        onTap: _isLoadingLike ? null : _toggleLike,
                         child: _Stat(
                           icon: _isLiked ? Icons.thumb_up_alt : Icons.thumb_up_alt_outlined,
                           value: _likes,
@@ -634,6 +673,7 @@ class _PostCardState extends State<_PostCard> {
     );
   }
 }
+
 
 class _Stat extends StatelessWidget {
   const _Stat({
@@ -696,12 +736,35 @@ class _ExploreDetailsSheetState extends State<_ExploreDetailsSheet> {
   late int _likes;
   late int _comments;
   bool _isLiked = false;
+  bool _isLoadingLike = false;
 
   @override
   void initState() {
     super.initState();
     _likes = widget.likes;
     _comments = widget.comments;
+  }
+
+  Future<void> _toggleLike() async {
+    if (_isLoadingLike) return;
+
+    setState(() {
+      _isLoadingLike = true;
+    });
+
+    final wasLiked = _isLiked;
+    setState(() {
+      _isLiked = !_isLiked;
+      _likes = _isLiked ? _likes + 1 : _likes - 1;
+    });
+
+    // For explore items, we don't persist likes to Firestore
+    // (they're static demo items, not real posts)
+    // If you want to persist them, you'd need a postId field
+
+    setState(() {
+      _isLoadingLike = false;
+    });
   }
 
   @override
@@ -779,12 +842,7 @@ class _ExploreDetailsSheetState extends State<_ExploreDetailsSheet> {
                 Row(
                   children: [
                     GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _isLiked = !_isLiked;
-                          _likes += _isLiked ? 1 : -1;
-                        });
-                      },
+                      onTap: _isLoadingLike ? null : _toggleLike,
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
@@ -853,22 +911,22 @@ class _ExploreDetailsSheetState extends State<_ExploreDetailsSheet> {
                   children: widget.tags
                       .map(
                         (tag) => Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.shade50,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.blue.shade200),
-                          ),
-                          child: Text(
-                            '#$tag',
-                            style: GoogleFonts.titilliumWeb(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.blue.shade700,
-                            ),
-                          ),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.blue.shade200),
+                      ),
+                      child: Text(
+                        '#$tag',
+                        style: GoogleFonts.titilliumWeb(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.blue.shade700,
                         ),
-                      )
+                      ),
+                    ),
+                  )
                       .toList(),
                 ),
                 const SizedBox(height: 20),
@@ -920,6 +978,7 @@ class _ExploreDetailsSheetState extends State<_ExploreDetailsSheet> {
     );
   }
 }
+
 
 
 
