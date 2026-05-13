@@ -410,13 +410,34 @@ class _DaeSignPostCommentsPageState extends State<DaeSignPostCommentsPage> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      DaeSignNavCircle(icon: Icons.home, label: 'Home', selected: false, onTap: () {}),
-                      SizedBox(width: 16),
-                      DaeSignNavCircle(icon: Icons.add, label: 'Add', selected: false, onTap: () {}),
-                      SizedBox(width: 16),
-                      DaeSignNavCircle(icon: Icons.search, label: 'Search', selected: false, onTap: () {}),
-                      SizedBox(width: 16),
-                      DaeSignNavCircle(icon: Icons.notifications, label: 'Alerts', selected: false, onTap: () {}),
+                      DaeSignNavCircle(
+                        icon: Icons.home,
+                        label: 'Home',
+                        target: DaeSignNavTarget.home,
+                        selected: false,
+                      ),
+                      const SizedBox(width: 16),
+                      DaeSignNavCircle(
+                        icon: Icons.add,
+                        label: 'Add',
+                        target: DaeSignNavTarget.create,
+                        selected: true,
+                      ),
+                      const SizedBox(width: 16),
+                      DaeSignNavCircle(
+                        icon: Icons.search,
+                        label: 'Search',
+                        target: DaeSignNavTarget.search,
+                        selected: false,
+                      ),
+                      const SizedBox(width: 16),
+                      DaeSignNavCircle(
+                        icon: Icons.notifications,
+                        label: 'Alerts',
+                        target: DaeSignNavTarget.alerts,
+                        selected: false,
+                      ),
+
                     ],
                   ),
                 ),

@@ -9,6 +9,7 @@ import 'services/r2_service.dart';
 import 'daesign_drawer.dart';
 import 'daesign_navcircle.dart';
 import 'daesign_home.dart';
+import 'daesign_search.dart';
 
 void main() {
   runApp(const MaterialApp(
@@ -385,21 +386,36 @@ class _DaeSignCreatePageState extends State<DaeSignCreatePage> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      DaeSignNavCircle(icon: Icons.home, label: 'Home', selected: false, onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Home tapped')));
-                      }),
+// inside the Row(children: [ ... ])
+                      DaeSignNavCircle(
+                        icon: Icons.home,
+                        label: 'Home',
+                        target: DaeSignNavTarget.home,
+                        selected: false,
+                      ),
                       const SizedBox(width: 16),
-                      DaeSignNavCircle(icon: Icons.add, label: 'Add', selected: true, onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Add tapped')));
-                      }),
+                      DaeSignNavCircle(
+                        icon: Icons.add,
+                        label: 'Add',
+                        target: DaeSignNavTarget.create,
+                        selected: true,
+                      ),
                       const SizedBox(width: 16),
-                      DaeSignNavCircle(icon: Icons.search, label: 'Search', selected: false, onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Search tapped')));
-                      }),
+                      DaeSignNavCircle(
+                        icon: Icons.search,
+                        label: 'Search',
+                        target: DaeSignNavTarget.search,
+                        selected: false,
+                      ),
                       const SizedBox(width: 16),
-                      DaeSignNavCircle(icon: Icons.notifications, label: 'Alerts', selected: false, onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Alerts tapped')));
-                      }),
+                      DaeSignNavCircle(
+                        icon: Icons.notifications,
+                        label: 'Alerts',
+                        target: DaeSignNavTarget.alerts,
+                        selected: false,
+                      ),
+
+
                     ],
                   ),
                 ),

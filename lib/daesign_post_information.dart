@@ -478,13 +478,34 @@ class _DaeSignPostInformationPageState
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      DaeSignNavCircle(icon: Icons.home, label: 'Home', selected: true, onTap: () {}),
-                      SizedBox(width: 16),  // ADD: spacing between icons
-                      DaeSignNavCircle(icon: Icons.add, label: 'Add', onTap: () {}),
-                      SizedBox(width: 16),  // ADD: spacing
-                      DaeSignNavCircle(icon: Icons.search, label: 'Search', onTap: () {}),
-                      SizedBox(width: 16),  // ADD: spacing
-                      DaeSignNavCircle(icon: Icons.notifications, label: 'Alerts', onTap: () {}),
+                      DaeSignNavCircle(
+                        icon: Icons.home,
+                        label: 'Home',
+                        target: DaeSignNavTarget.home,
+                        selected: false,
+                      ),
+                      const SizedBox(width: 16),
+                      DaeSignNavCircle(
+                        icon: Icons.add,
+                        label: 'Add',
+                        target: DaeSignNavTarget.create,
+                        selected: false,
+                      ),
+                      const SizedBox(width: 16),
+                      DaeSignNavCircle(
+                        icon: Icons.search,
+                        label: 'Search',
+                        target: DaeSignNavTarget.search,
+                        selected: false,
+                      ),
+                      const SizedBox(width: 16),
+                      DaeSignNavCircle(
+                        icon: Icons.notifications,
+                        label: 'Alerts',
+                        target: DaeSignNavTarget.alerts,
+                        selected: false,
+                      ),
+
                     ],
                   ),
                 ),

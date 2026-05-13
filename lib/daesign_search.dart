@@ -326,23 +326,34 @@ class _DaeSignSearchPageState extends State<DaeSignSearchPage> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      DaeSignNavCircle(icon: Icons.home, label: 'Home', selected: false, onTap: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (context) => const DaeSignHomePage()),
-                        );
-                      }),
+                      DaeSignNavCircle(
+                        icon: Icons.home,
+                        label: 'Home',
+                        target: DaeSignNavTarget.home,
+                        selected: false,
+                      ),
                       const SizedBox(width: 16),
-                      DaeSignNavCircle(icon: Icons.add, label: 'Add', selected: false, onTap: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (context) => const DaeSignCreatePage()),
-                        );
-                      }),
+                      DaeSignNavCircle(
+                        icon: Icons.add,
+                        label: 'Add',
+                        target: DaeSignNavTarget.create,
+                        selected: false,
+                      ),
                       const SizedBox(width: 16),
-                      DaeSignNavCircle(icon: Icons.search, label: 'Search', selected: true, onTap: () {}),
+                      DaeSignNavCircle(
+                        icon: Icons.search,
+                        label: 'Search',
+                        target: DaeSignNavTarget.search,
+                        selected: true,
+                      ),
                       const SizedBox(width: 16),
-                      DaeSignNavCircle(icon: Icons.notifications, label: 'Alerts', selected: false, onTap: () {}),
+                      DaeSignNavCircle(
+                        icon: Icons.notifications,
+                        label: 'Alerts',
+                        target: DaeSignNavTarget.alerts,
+                        selected: false,
+                      ),
+
                     ],
                   ),
                 ),
