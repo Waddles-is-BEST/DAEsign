@@ -276,20 +276,58 @@ class _DaeSignPostCommentsPageState extends State<DaeSignPostCommentsPage> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              commentData['user_idAT'] ?? '',
-                                              style: textTheme.titleMedium?.copyWith(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w800,
-                                                color: Colors.grey.shade600,
+                                        FutureBuilder<DocumentSnapshot>(
+                                          future: FirebaseFirestore.instance
+                                              .collection('tbl_users')
+                                              .doc(commentData['user_idAT'])
+                                              .get(),
+                                          builder: (context, userSnapshot) {
+                                            String? userPhotoURL;
+                                            if (userSnapshot.hasData && userSnapshot.data != null) {
+                                              final userData = userSnapshot.data!.data() as Map<String, dynamic>?;
+                                              userPhotoURL = userData?['photoURL'] as String?;
+                                            }
+
+                                            return CircleAvatar(
+                                              radius: 18,
+                                              backgroundColor: Colors.black54,
+                                              child: userPhotoURL != null
+                                                  ? ClipOval(
+                                                      child: Image.network(
+                                                        userPhotoURL,
+                                                        fit: BoxFit.cover,
+                                                        errorBuilder: (context, error, stackTrace) {
+                                                          print('⚠️ Error loading commenter profile image: $userPhotoURL');
+                                                          return const Icon(
+                                                            Icons.person,
+                                                            color: Colors.white,
+                                                          );
+                                                        },
+                                                      ),
+                                                    )
+                                                  : const Icon(
+                                                      Icons.person,
+                                                      color: Colors.white,
+                                                    ),
+                                            );
+                                          },
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                commentData['user_idAT'] ?? '',
+                                                style: textTheme.titleMedium?.copyWith(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w800,
+                                                  color: Colors.grey.shade600,
+                                                ),
                                               ),
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
                                       ],
                                     ),

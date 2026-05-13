@@ -112,27 +112,40 @@ class _DaeSignEditProfilePageState extends State<DaeSignEditProfilePage> {
     }
   }
 
+  void _handleBackPress() {
+    // Pop back to profile page without saving
+    if (mounted && Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Edit Profile',
-          style: GoogleFonts.inter(
-            fontSize: 24,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
+    return PopScope(
+      canPop: true,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        _handleBackPress();
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: _handleBackPress,
           ),
+          title: Text(
+            'Edit Profile',
+            style: GoogleFonts.inter(
+              fontSize: 24,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+          centerTitle: true,
         ),
-        centerTitle: true,
-      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -283,7 +296,7 @@ class _DaeSignEditProfilePageState extends State<DaeSignEditProfilePage> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  onPressed: _isLoading ? null : () => Navigator.pop(context),
+                  onPressed: _isLoading ? null : _handleBackPress,
                   child: Text(
                     'Cancel',
                     style: GoogleFonts.inter(
@@ -298,6 +311,7 @@ class _DaeSignEditProfilePageState extends State<DaeSignEditProfilePage> {
           ),
         ),
       ),
+        ),
     );
   }
 }

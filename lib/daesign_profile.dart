@@ -55,29 +55,42 @@ class _DaeSignProfilePageState extends State<DaeSignProfilePage> {
     }
   }
 
+  void _handleBackPress() {
+    // Pop back to previous page (usually home or where profile was accessed from)
+    if (mounted && Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = authService.currentUser;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Profile',
-          style: GoogleFonts.inter(
-            fontSize: 24,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
+    return PopScope(
+      canPop: true,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        _handleBackPress();
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: _handleBackPress,
           ),
+          title: Text(
+            'Profile',
+            style: GoogleFonts.inter(
+              fontSize: 24,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+          centerTitle: true,
         ),
-        centerTitle: true,
-      ),
       drawer: DaeSignDrawer(
         activeItem: _activeDrawerItem,
         onItemTap: _handleDrawerItemTap,
@@ -103,6 +116,9 @@ class _DaeSignProfilePageState extends State<DaeSignProfilePage> {
                             user!.photoURL!,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
+                              print('⚠️ Error loading profile image: ${user.photoURL}');
+                              print('   Error: $error');
+                              print('   StackTrace: $stackTrace');
                               return Icon(
                                 Icons.person,
                                 size: 60,
@@ -214,6 +230,7 @@ class _DaeSignProfilePageState extends State<DaeSignProfilePage> {
           ),
         ),
       ),
+        ),
     );
   }
 

@@ -1,4 +1,3 @@
-// lib/daesign_home.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -154,25 +153,27 @@ class _DaeSignHomePageState extends State<DaeSignHomePage> {
                 backgroundColor: Colors.black54,
                 child: authService.currentUser?.photoURL != null
                     ? ClipOval(
-                  child: Image.network(
-                    authService.currentUser!.photoURL!,
-                    fit: BoxFit.cover,
-                    width: 36,
-                    height: 36,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Icon(
+                        child: Image.network(
+                          authService.currentUser!.photoURL!,
+                          fit: BoxFit.cover,
+                          width: 36,
+                          height: 36,
+                          errorBuilder: (context, error, stackTrace) {
+                            print('⚠️ Error loading current user profile image: ${authService.currentUser?.photoURL}');
+                            print('   Error: $error');
+                            return Icon(
+                              Icons.person,
+                              size: 18,
+                              color: Colors.white,
+                            );
+                          },
+                        ),
+                      )
+                    : const Icon(
                         Icons.person,
                         size: 18,
                         color: Colors.white,
-                      );
-                    },
-                  ),
-                )
-                    : const Icon(
-                  Icons.person,
-                  size: 18,
-                  color: Colors.white,
-                ),
+                      ),
               ),
             ),
           )
@@ -183,7 +184,7 @@ class _DaeSignHomePageState extends State<DaeSignHomePage> {
         child: Stack(
           children: [
             Padding(
-              padding: EdgeInsets.zero, // keep space for pill nav
+              padding: EdgeInsets.zero,// keep space for pill nav
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 child: Column(
@@ -207,87 +208,86 @@ class _DaeSignHomePageState extends State<DaeSignHomePage> {
 
                     // Horizontal Explore list - fixed height to match wireframe
                     SizedBox(
-                      height: 170,
+                      height: 205,
                       child: ListView.separated(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         scrollDirection: Axis.horizontal,
                         itemCount: exploreItems.length,
                         separatorBuilder: (_, __) => const SizedBox(width: 14),
-                        itemBuilder: (context, index) {
-                          final item = exploreItems[index];
-                          const double totalWidth = 280;
+                          itemBuilder: (context, index) {
+                            final item = exploreItems[index];
+                            const double totalWidth = 280;
+                            const double imageHeight = 116; // reduced to fit inside 205px total height
 
-                          return SizedBox(
-                            width: totalWidth,
-                            child: GestureDetector(
-                              onTap: () {
-                                // Navigate to explore details page
-                                showModalBottomSheet(
-                                  context: context,
-                                  isScrollControlled: true,
-                                  backgroundColor: Colors.transparent,
-                                  builder: (context) => _ExploreDetailsSheet(
-                                    title: item['title'],
-                                    subtitle: item['subtitle'],
-                                    image: item['image'],
-                                    likes: item['likes'],
-                                    comments: item['comments'],
-                                    tags: item['tags'],
-                                    textTheme: textTheme,
-                                  ),
-                                );
-                              },
-                              child: Column(
-                                mainAxisSize: MainAxisSize.max,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  // Make the image flexible so text and stats can size themselves
-                                  Expanded(
-                                    child: _ExploreImageCard(
+                            return SizedBox(
+                              width: totalWidth,
+                              child: GestureDetector(
+                                onTap: () {
+                                  // Navigate to explore details page
+                                  showModalBottomSheet(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    backgroundColor: Colors.transparent,
+                                    builder: (context) => _ExploreDetailsSheet(
+                                      title: item['title'],
+                                      subtitle: item['subtitle'],
+                                      image: item['image'],
+                                      likes: item['likes'],
+                                      comments: item['comments'],
+                                      tags: item['tags'],
+                                      textTheme: textTheme,
+                                    ),
+                                  );
+                                },
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    _ExploreImageCard(
                                       imageAsset: item['image']!,
                                       width: totalWidth,
-                                      // height left null -> will expand to available space inside Expanded
+                                      height: imageHeight,
                                     ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    item['title']!,
-                                    style: textTheme.titleMedium?.copyWith(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.black,
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      item['title']!,
+                                      style: textTheme.titleMedium?.copyWith(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.black,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.center,
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 3),
-                                  Text(
-                                    item['subtitle']!,
-                                    style: textTheme.bodySmall?.copyWith(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade600,
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      item['subtitle']!,
+                                      style: textTheme.bodySmall?.copyWith(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.center,
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      _Stat(icon: Icons.thumb_up_alt_outlined, value: item['likes'] ?? 0),
-                                      const SizedBox(width: 12),
-                                      _Stat(icon: Icons.comment_outlined, value: item['comments'] ?? 0),
-                                    ],
-                                  ),
-                                ],
+                                    const SizedBox(height: 6),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        _Stat(icon: Icons.thumb_up_alt_outlined, value: item['likes'] ?? 0),
+                                        const SizedBox(width: 12),
+                                        _Stat(icon: Icons.comment_outlined, value: item['comments'] ?? 0),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
                       ), // <-- end of ListView.separated
                     ),
+
 
                     const SizedBox(height: 18),
 
@@ -395,37 +395,29 @@ class _DaeSignHomePageState extends State<DaeSignHomePage> {
                       BoxShadow(color: Colors.black12, blurRadius: 12, offset: Offset(0, 6)),
                     ],
                     border: Border.all(color: Color(0xFF737373), width: 2),
+
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                    DaeSignNavCircle(
-                    icon: Icons.home,
-                    label: 'Home',
-                    target: DaeSignNavTarget.home,
-                    selected: true,
-                  ),
-                  const SizedBox(width: 16),
-                  DaeSignNavCircle(
-                    icon: Icons.add,
-                    label: 'Add',
-                    target: DaeSignNavTarget.create,
-                    selected: false,
-                  ),
-                  const SizedBox(width: 16),
-                  DaeSignNavCircle(
-                    icon: Icons.search,
-                    label: 'Search',
-                    target: DaeSignNavTarget.search,
-                    selected: false,
-                  ),
-                  const SizedBox(width: 16),
-                  DaeSignNavCircle(
-                    icon: Icons.notifications,
-                    label: 'Alerts',
-                    target: DaeSignNavTarget.alerts,
-                    selected: false,
-                  ),],
+                      DaeSignNavCircle(icon: Icons.home, label: 'Home', selected: true, onTap: () {}),
+                      const SizedBox(width: 16),
+                      DaeSignNavCircle(icon: Icons.add, label: 'Add', selected: false, onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const DaeSignCreatePage()),
+                        );
+                      }),
+                      const SizedBox(width: 16),
+                      DaeSignNavCircle(icon: Icons.search, label: 'Search', selected: false, onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const DaeSignSearchPage()),
+                        );
+                      }),
+                      const SizedBox(width: 16),
+                      DaeSignNavCircle(icon: Icons.notifications, label: 'Alerts', selected: false, onTap: () {}),
+                    ],
                   ),
                 ),
               ),
@@ -441,18 +433,17 @@ class _ExploreImageCard extends StatelessWidget {
   const _ExploreImageCard({
     required this.imageAsset,
     required this.width,
-    this.height,
+    required this.height,
   });
 
   final String imageAsset;
   final double width;
-  final double? height;
+  final double height;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: width,
-      // height is optional: if null the container will expand inside an Expanded parent
       height: height,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
@@ -477,6 +468,7 @@ class _ExploreImageCard extends StatelessWidget {
     );
   }
 }
+
 
 class _FilterChipLabel extends StatelessWidget {
   const _FilterChipLabel({required this.label});
@@ -537,7 +529,7 @@ class _PostCardState extends State<_PostCard> {
       _isLiked = !_isLiked;
       _likes = _isLiked ? _likes + 1 : _likes - 1;
     });
-
+    
     // Save to Firestore
     if (widget.postId != null && widget.postId!.isNotEmpty) {
       final firestore = FirebaseFirestore.instance;
@@ -584,21 +576,21 @@ class _PostCardState extends State<_PostCard> {
                 aspectRatio: 3 / 4,
                 child: widget.imageUrl != null
                     ? Image.network(
-                  widget.imageUrl!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    print('Error loading image: ${widget.imageUrl}');
-                    print('Error: $error');
-                    return Container(
-                      color: Colors.grey.shade300,
-                      child: const Icon(Icons.image, size: 48, color: Colors.white70),
-                    );
-                  },
-                )
+                        widget.imageUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          print('Error loading image: ${widget.imageUrl}');
+                          print('Error: $error');
+                          return Container(
+                            color: Colors.grey.shade300,
+                            child: const Icon(Icons.image, size: 48, color: Colors.white70),
+                          );
+                        },
+                      )
                     : Container(
-                  color: Colors.grey.shade300,
-                  child: const Icon(Icons.image, size: 48, color: Colors.white70),
-                ),
+                        color: Colors.grey.shade300,
+                        child: const Icon(Icons.image, size: 48, color: Colors.white70),
+                      ),
               ),
             ),
 
@@ -871,22 +863,22 @@ class _ExploreDetailsSheetState extends State<_ExploreDetailsSheet> {
                   children: widget.tags
                       .map(
                         (tag) => Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.blue.shade200),
-                      ),
-                      child: Text(
-                        '#$tag',
-                        style: GoogleFonts.titilliumWeb(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.blue.shade700,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade50,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.blue.shade200),
+                          ),
+                          child: Text(
+                            '#$tag',
+                            style: GoogleFonts.titilliumWeb(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.blue.shade700,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  )
+                      )
                       .toList(),
                 ),
                 const SizedBox(height: 20),
@@ -938,3 +930,6 @@ class _ExploreDetailsSheetState extends State<_ExploreDetailsSheet> {
     );
   }
 }
+
+
+

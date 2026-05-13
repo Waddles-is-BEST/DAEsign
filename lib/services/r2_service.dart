@@ -41,6 +41,7 @@ class R2Service {
 
       if (response.statusCode == 200) {
         // Return the public URL (bucket name is already configured in the subdomain)
+        // objectKey already has 'post_images/' prefix, no need to add bucket name
         final publicUrl = '$r2Domain/$objectKey';
         print('✅ Image uploaded successfully to R2!');
         print('   Object Key: $objectKey');

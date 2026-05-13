@@ -302,9 +302,47 @@ class _DaeSignPostInformationPageState
                           stream: FirebaseFirestore.instance
                               .collection('tbl_comments')
                               .where('post_idAT', isEqualTo: widget.postId)
-                              .orderBy('createdAT', descending: true)
                               .snapshots(),
                           builder: (context, snapshot) {
+                            // Show loading state
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: const CircularProgressIndicator(),
+                                ),
+                              );
+                            }
+
+                            // Show error state
+                            if (snapshot.hasError) {
+                              print('Error loading comments: ${snapshot.error}');
+                              return Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'No comments yet',
+                                        style: textTheme.bodyLarge?.copyWith(
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Be the first to comment!',
+                                        style: textTheme.bodySmall?.copyWith(
+                                          color: Colors.grey.shade500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }
+
+                            // Check if data exists and has comments
                             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                               return Center(
                                 child: Padding(
@@ -320,6 +358,12 @@ class _DaeSignPostInformationPageState
                             }
 
                             var comments = snapshot.data!.docs;
+                            // Sort comments by createdAT in descending order
+                            comments.sort((a, b) {
+                              final aTime = (a['createdAT'] as Timestamp?)?.toDate() ?? DateTime.now();
+                              final bTime = (b['createdAT'] as Timestamp?)?.toDate() ?? DateTime.now();
+                              return bTime.compareTo(aTime);
+                            });
 
                             return Column(
                               children: comments.map((comment) {
@@ -341,13 +385,41 @@ class _DaeSignPostInformationPageState
                                   child: Row(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      const CircleAvatar(
-                                        radius: 22,
-                                        backgroundColor: Colors.black54,
-                                        child: Icon(
-                                          Icons.person,
-                                          color: Colors.white,
-                                        ),
+                                      FutureBuilder<DocumentSnapshot>(
+                                        future: FirebaseFirestore.instance
+                                            .collection('tbl_users')
+                                            .doc(commentData['user_idAT'])
+                                            .get(),
+                                        builder: (context, userSnapshot) {
+                                          String? userPhotoURL;
+                                          if (userSnapshot.hasData && userSnapshot.data != null) {
+                                            final userData = userSnapshot.data!.data() as Map<String, dynamic>?;
+                                            userPhotoURL = userData?['photoURL'] as String?;
+                                          }
+
+                                          return CircleAvatar(
+                                            radius: 22,
+                                            backgroundColor: Colors.black54,
+                                            child: userPhotoURL != null
+                                                ? ClipOval(
+                                                    child: Image.network(
+                                                      userPhotoURL,
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder: (context, error, stackTrace) {
+                                                        print('⚠️ Error loading commenter profile image: $userPhotoURL');
+                                                        return const Icon(
+                                                          Icons.person,
+                                                          color: Colors.white,
+                                                        );
+                                                      },
+                                                    ),
+                                                  )
+                                                : const Icon(
+                                                    Icons.person,
+                                                    color: Colors.white,
+                                                  ),
+                                          );
+                                        },
                                       ),
                                       const SizedBox(width: 12),
                                       Expanded(

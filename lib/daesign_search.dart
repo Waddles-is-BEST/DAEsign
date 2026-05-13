@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'daesign_drawer.dart';
 import 'daesign_navcircle.dart';
 import 'daesign_home.dart';
@@ -25,73 +26,54 @@ class _DaeSignSearchPageState extends State<DaeSignSearchPage> {
   String _selectedTag = 'all';
   int _selectedTab = 1;
 
-  static final List<Map<String, dynamic>> samplePosts = [
-    {
-      'title': 'Remembering Steve',
-      'author': '@apolover',
-      'image': 'assets/images/Placeholders/steve_jobs.png',
-      'likes': 298,
-      'comments': 254,
-      'views': 3454,
-      'tags': ['portrait', 'inspiration', 'tech'],
-      'id': 'post_1',
-      'postId': 'post_1',
-    },
-    {
-      'title': 'The Girl in my dream',
-      'author': '@telenov...',
-      'image': 'assets/images/Placeholders/pretty_girl.png',
-      'likes': 298,
-      'comments': 254,
-      'views': 3454,
-      'tags': ['portrait', 'digital', 'character'],
-    },
-    {
-      'title': 'Portrait Study',
-      'author': '@artlover',
-      'image': 'assets/images/Placeholders/pink_girl.png',
-      'likes': 120,
-      'comments': 41,
-      'views': 980,
-      'tags': ['portrait', 'study', 'traditional'],
-    },
-    {
-      'title': 'Floral Dream',
-      'author': '@flower',
-      'image': 'assets/images/Placeholders/pretty_girl.png',
-      'likes': 77,
-      'comments': 14,
-      'views': 600,
-      'tags': ['floral', 'nature', 'dreamy'],
-    },
-    {
-      'title': 'Digital Sketch',
-      'author': '@digi',
-      'image': 'assets/images/Placeholders/steve_jobs.png',
-      'likes': 55,
-      'comments': 8,
-      'views': 420,
-      'tags': ['digital', 'sketch', 'quick'],
-    },
-    {
-      'title': 'Evening Portrait',
-      'author': '@luna',
-      'image': 'assets/images/Placeholders/pink_girl.png',
-      'likes': 180,
-      'comments': 20,
-      'views': 1300,
-      'tags': ['portrait', 'evening', 'mood'],
-    },
-  ];
+  // Fetch posts from Firestore
+  Stream<QuerySnapshot> _getPostsStream() {
+    return FirebaseFirestore.instance.collection('tbl_posts').snapshots();
+  }
 
-  List<Map<String, dynamic>> get filteredPosts {
-    final q = _query.trim().toLowerCase();
-    if (q.isEmpty) return samplePosts;
-    return samplePosts.where((p) {
-      final title = (p['title'] as String).toLowerCase();
-      final author = (p['author'] as String).toLowerCase();
-      return title.contains(q) || author.contains(q);
+  // Convert Firestore documents to display format
+  List<Map<String, dynamic>> _convertFirestorePosts(List<DocumentSnapshot> docs) {
+    return docs.map((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      final tagsStr = (data['tagsAT'] as String?)?.trim() ?? '';
+      final tags = tagsStr.isEmpty ? [] : tagsStr.split(',').map((t) => t.trim().toLowerCase()).toList();
+      
+      return {
+        'id': doc.id,
+        'postId': doc.id,
+        'title': (data['contentAT'] as String?)?.split('\n').first ?? 'Untitled',
+        'author': '@${(data['user_idAT'] as String?)?.replaceAll(' ', '') ?? 'user'}',
+        'image': (data['imageurlAT'] as String?) ?? '',
+        'likes': (data['nooflikeAT'] as int?) ?? 0,
+        'comments': (data['noofcommentsAT'] as int?) ?? 0,
+        'views': 0,
+        'tags': tags,
+      };
     }).toList();
+  }
+
+  List<Map<String, dynamic>> _filterPosts(List<Map<String, dynamic>> posts) {
+    final q = _query.trim().toLowerCase();
+    var filtered = posts;
+    
+    // Filter by search query (title and author)
+    if (q.isNotEmpty) {
+      filtered = filtered.where((p) {
+        final title = (p['title'] as String).toLowerCase();
+        final author = (p['author'] as String).toLowerCase();
+        return title.contains(q) || author.contains(q);
+      }).toList();
+    }
+    
+    // Filter by selected tag
+    if (_selectedTag != 'all') {
+      filtered = filtered.where((p) {
+        final tags = p['tags'] as List<dynamic>? ?? [];
+        return tags.contains(_selectedTag.toLowerCase());
+      }).toList();
+    }
+    
+    return filtered;
   }
 
   @override
@@ -195,7 +177,7 @@ class _DaeSignSearchPageState extends State<DaeSignSearchPage> {
 
                     const SizedBox(height: 22),
 
-                    // Results header (count)
+                    // Results header (count) - will be updated by StreamBuilder
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 18),
                       child: Row(
@@ -209,12 +191,19 @@ class _DaeSignSearchPageState extends State<DaeSignSearchPage> {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Text(
-                            '(${filteredPosts.length})',
-                            style: textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey.shade700,
-                            ),
+                          StreamBuilder<QuerySnapshot>(
+                            stream: _getPostsStream(),
+                            builder: (context, snapshot) {
+                              final allPosts = _convertFirestorePosts(snapshot.data?.docs ?? []);
+                              final filteredPosts = _filterPosts(allPosts);
+                              return Text(
+                                '(${filteredPosts.length})',
+                                style: textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey.shade700,
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -265,41 +254,78 @@ class _DaeSignSearchPageState extends State<DaeSignSearchPage> {
 
                     const SizedBox(height: 14),
 
-                    // Responsive grid of posts (Wrap)
-                    LayoutBuilder(builder: (context, constraints) {
-                      final outerPadding = 18.0;
-                      final spacing = 14.0;
-                      final cardWidth = (deviceWidth - outerPadding * 2 - spacing) / 2;
-
-                      final filteredByTag = _selectedTag == 'all'
-                          ? filteredPosts
-                          : filteredPosts
-                              .where((p) => (p['tags'] as List<dynamic>).contains(_selectedTag))
-                              .toList();
-
-                      return Padding(
-                        padding: EdgeInsets.symmetric(horizontal: outerPadding),
-                        child: Wrap(
-                          runSpacing: 18,
-                          spacing: spacing,
-                          children: filteredByTag.map((post) {
-                            return SizedBox(
-                              width: cardWidth,
-                              child: _PostCard(
-                                title: post['title'] as String,
-                                author: post['author'] as String,
-                                imageAsset: post['image'] as String,
-                                likes: post['likes'] as int,
-                                comments: post['comments'] as int,
-                                views: post['views'] as int,
-                                textTheme: textTheme,
-                                postId: post['postId'] as String,
+                    // Responsive grid of posts from Firestore
+                    StreamBuilder<QuerySnapshot>(
+                      stream: _getPostsStream(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Padding(
+                            padding: EdgeInsets.all(32),
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                        
+                        if (snapshot.hasError) {
+                          return Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Text('Error loading posts: ${snapshot.error}'),
+                          );
+                        }
+                        
+                        final allPosts = _convertFirestorePosts(snapshot.data?.docs ?? []);
+                        final filteredPosts = _filterPosts(allPosts);
+                        
+                        if (filteredPosts.isEmpty) {
+                          return Padding(
+                            padding: const EdgeInsets.all(32),
+                            child: Text(
+                              'No posts found',
+                              style: textTheme.titleMedium?.copyWith(
+                                fontSize: 16,
+                                color: Colors.grey.shade600,
                               ),
-                            );
-                          }).toList(),
-                        ),
-                      );
-                    }),
+                            ),
+                          );
+                        }
+
+                        return LayoutBuilder(builder: (context, constraints) {
+                          final outerPadding = 18.0;
+                          final spacing = 14.0;
+                          final cardWidth = (deviceWidth - outerPadding * 2 - spacing) / 2;
+
+                          return Padding(
+                            padding: EdgeInsets.symmetric(horizontal: outerPadding),
+                            child: Wrap(
+                              runSpacing: 18,
+                              spacing: spacing,
+                              children: filteredPosts.map((post) {
+                                final title = post['title'] as String? ?? 'Untitled';
+                                final author = post['author'] as String? ?? 'Unknown';
+                                final imageUrl = post['image'] as String? ?? '';
+                                final likes = (post['likes'] as int?) ?? 0;
+                                final comments = (post['comments'] as int?) ?? 0;
+                                final views = (post['views'] as int?) ?? 0;
+                                final postId = post['postId'] as String? ?? '';
+
+                                return SizedBox(
+                                  width: cardWidth,
+                                  child: _PostCard(
+                                    title: title,
+                                    author: author,
+                                    imageAsset: imageUrl,
+                                    likes: likes,
+                                    comments: comments,
+                                    views: views,
+                                    textTheme: textTheme,
+                                    postId: postId,
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          );
+                        });
+                      },
+                    ),
 
                     const SizedBox(height: 140),
                   ],
@@ -437,14 +463,7 @@ class _PostCardState extends State<_PostCard> {
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               child: AspectRatio(
                 aspectRatio: 3 / 4,
-                child: Image.asset(
-                  widget.imageAsset,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    color: Colors.grey.shade300,
-                    child: const Icon(Icons.image, size: 48, color: Colors.white70),
-                  ),
-                ),
+                child: _buildPostImage(widget.imageAsset),
               ),
             ),
 
@@ -475,23 +494,29 @@ class _PostCardState extends State<_PostCard> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _isLiked = !_isLiked;
-                            _likes += _isLiked ? 1 : -1;
-                          });
-                        },
-                        child: _Stat(
-                          icon: _isLiked ? Icons.thumb_up_alt : Icons.thumb_up_alt_outlined,
-                          value: _likes,
-                          isActive: _isLiked,
+                      Flexible(
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _isLiked = !_isLiked;
+                              _likes += _isLiked ? 1 : -1;
+                            });
+                          },
+                          child: _Stat(
+                            icon: _isLiked ? Icons.thumb_up_alt : Icons.thumb_up_alt_outlined,
+                            value: _likes,
+                            isActive: _isLiked,
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      _Stat(icon: Icons.comment_outlined, value: widget.comments),
-                      const SizedBox(width: 12),
-                      _Stat(icon: Icons.remove_red_eye_outlined, value: widget.views),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: _Stat(icon: Icons.comment_outlined, value: widget.comments),
+                      ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: _Stat(icon: Icons.remove_red_eye_outlined, value: widget.views),
+                      ),
                     ],
                   ),
                 ],
@@ -501,6 +526,37 @@ class _PostCardState extends State<_PostCard> {
         ),
       ),
     );
+  }
+
+  Widget _buildPostImage(String imageUrl) {
+    if (imageUrl.isEmpty) {
+      return Container(
+        color: Colors.grey.shade300,
+        child: const Icon(Icons.image, size: 48, color: Colors.white70),
+      );
+    }
+
+    if (imageUrl.startsWith('http')) {
+      // Network image from Firestore
+      return Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(
+          color: Colors.grey.shade300,
+          child: const Icon(Icons.image, size: 48, color: Colors.white70),
+        ),
+      );
+    } else {
+      // Asset image (from sample/placeholder)
+      return Image.asset(
+        imageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(
+          color: Colors.grey.shade300,
+          child: const Icon(Icons.image, size: 48, color: Colors.white70),
+        ),
+      );
+    }
   }
 }
 
@@ -568,17 +624,26 @@ class _PostDetailsSheetState extends State<_PostDetailsSheet> {
                 const SizedBox(height: 20),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.asset(
-                    widget.imageAsset,
+                  child: SizedBox(
                     width: double.infinity,
                     height: 280,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      width: double.infinity,
-                      height: 280,
-                      color: Colors.grey.shade300,
-                      child: const Icon(Icons.image, size: 56, color: Colors.white70),
-                    ),
+                    child: widget.imageAsset.startsWith('http')
+                        ? Image.network(
+                            widget.imageAsset,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: Colors.grey.shade300,
+                              child: const Icon(Icons.image, size: 56, color: Colors.white70),
+                            ),
+                          )
+                        : Image.asset(
+                            widget.imageAsset,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: Colors.grey.shade300,
+                              child: const Icon(Icons.image, size: 56, color: Colors.white70),
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 20),
