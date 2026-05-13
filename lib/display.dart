@@ -92,6 +92,16 @@ class ViewPostsPage extends StatelessWidget {
           height: 220,
           width: double.infinity,
           fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            print('Error loading image in display.dart: $imageUrl');
+            print('Error: $error');
+            return Container(
+              height: 220,
+              width: double.infinity,
+              color: Colors.grey.shade300,
+              child: const Icon(Icons.image, size: 48, color: Colors.white70),
+            );
+          },
         ),
       ),
     );

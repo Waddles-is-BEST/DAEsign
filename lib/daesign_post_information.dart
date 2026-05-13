@@ -121,9 +121,13 @@ class _DaeSignPostInformationPageState
                                       ? Image.network(
                                           widget.imageurlAT!,
                                           fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) => Container(
-                                            color: Colors.grey.shade300,
-                                          ),
+                                          errorBuilder: (context, error, stackTrace) {
+                                            print('Error loading image in post info (blurred): ${widget.imageurlAT}');
+                                            print('Error: $error');
+                                            return Container(
+                                              color: Colors.grey.shade300,
+                                            );
+                                          },
                                         )
                                       : Container(color: Colors.grey.shade300),
                                 ),
@@ -158,15 +162,19 @@ class _DaeSignPostInformationPageState
                                         ? Image.network(
                                             widget.imageurlAT!,
                                             fit: BoxFit.cover,
-                                            errorBuilder: (_, __, ___) => Container(
-                                              color: Colors.grey.shade300,
-                                              alignment: Alignment.center,
-                                              child: const Icon(
-                                                Icons.image,
-                                                size: 56,
-                                                color: Colors.white70,
-                                              ),
-                                            ),
+                                            errorBuilder: (context, error, stackTrace) {
+                                              print('Error loading image in post info: ${widget.imageurlAT}');
+                                              print('Error: $error');
+                                              return Container(
+                                                color: Colors.grey.shade300,
+                                                alignment: Alignment.center,
+                                                child: const Icon(
+                                                  Icons.image,
+                                                  size: 56,
+                                                  color: Colors.white70,
+                                                ),
+                                              );
+                                            },
                                           )
                                         : Container(
                                             color: Colors.grey.shade300,

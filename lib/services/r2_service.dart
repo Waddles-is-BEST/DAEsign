@@ -6,36 +6,52 @@ class R2Service {
   static const String bucketName = 'daesigntemp';
   static const String accountId = '0763786e67cbcd992136d82f35e7f81e';
   static const String bearerToken = 'cfut_ZIdyYlacbp9UbLGa1aend1Hdg6qlxDQgOlqYciNS8ad7578e';
-  static const String r2Domain = 'https://daesigntemp.0763786e67cbcd992136d82f35e7f81e.r2.dev';
+  static const String r2Domain = 'https://pub-0b054e4b7b904f29a4aa3cc0989a9175.r2.dev';
 
-  /// Upload a file to Cloudflare R2
+  /// Upload a file to Cloudflare R2 using the Cloudflare API
   /// Returns the public URL of the uploaded file
   static Future<String?> uploadImage(File imageFile, String fileName) async {
     try {
       // Read file bytes
       final fileBytes = await imageFile.readAsBytes();
 
-      // Prepare request
+      // Prepare object key
       final objectKey = 'post_images/$fileName.jpg';
-      final s3Url = 'https://$accountId.r2.cloudflarestorage.com/$bucketName/$objectKey';
 
-      // Upload to R2 using S3 API
+      // Use Cloudflare API endpoint for direct upload
+      final uploadUrl = Uri.parse(
+        'https://api.cloudflare.com/client/v4/accounts/$accountId/r2/buckets/$bucketName/objects/$objectKey',
+      );
+
+      print('Uploading to R2: $objectKey');
+      print('Upload URL: $uploadUrl');
+
+      // Upload to R2 using Cloudflare API
       final response = await http.put(
-        Uri.parse(s3Url),
+        uploadUrl,
         headers: {
           'Authorization': 'Bearer $bearerToken',
           'Content-Type': 'image/jpeg',
         },
         body: fileBytes,
-      );
+      ).timeout(const Duration(seconds: 30));
 
-      if (response.statusCode == 200 || response.statusCode == 204) {
-        // Return the public URL
+      print('Upload response status: ${response.statusCode}');
+      print('Upload response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        // Return the public URL (bucket name is already configured in the subdomain)
         final publicUrl = '$r2Domain/$objectKey';
-        print('Image uploaded successfully: $publicUrl');
+        print('✅ Image uploaded successfully to R2!');
+        print('   Object Key: $objectKey');
+        print('   Public URL: $publicUrl');
+        print('   R2 Domain: $r2Domain');
+        print('   Bucket: $bucketName');
         return publicUrl;
       } else {
-        throw Exception('Failed to upload image: ${response.statusCode} - ${response.body}');
+        throw Exception(
+          'Failed to upload image. Status: ${response.statusCode}. Response: ${response.body}',
+        );
       }
     } catch (e) {
       print('Error uploading to R2: $e');

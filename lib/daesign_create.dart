@@ -330,9 +330,11 @@ class _DaeSignCreatePageState extends State<DaeSignCreatePage> {
                                     ),
                                   );
                                 } catch (e) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text("$e")),
-                                  );
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text("$e")),
+                                    );
+                                  }
                                 }
                               },
                               style: ElevatedButton.styleFrom(

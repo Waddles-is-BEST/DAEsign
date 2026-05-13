@@ -24,12 +24,7 @@ class DaeSignNavCircle extends StatelessWidget {
 
 
     return GestureDetector(
-      onTap: () {
-        onTap();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$label tapped')),
-        );
-      },
+      onTap: onTap,
       child: Container(
         width: 44,
         height: 44,
