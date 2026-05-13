@@ -2,20 +2,33 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'daesign_drawer.dart';
 import 'daesign_navcircle.dart';
 
 
 
 void main() {
-  runApp(const MaterialApp(
+  runApp(MaterialApp(
     debugShowCheckedModeBanner: false,
-    home: DaeSignPostInformationPage(),
+    home: DaeSignPostInformationPage(postId: ''),
   ));
 }
 
 class DaeSignPostInformationPage extends StatefulWidget {
-  const DaeSignPostInformationPage({super.key});
+  final String postId;
+  final String? imageurlAT;
+  final String? contentAT;
+  final String? userIdAT;
+
+  const DaeSignPostInformationPage({
+    super.key,
+    required this.postId,
+    this.imageurlAT,
+    this.contentAT,
+    this.userIdAT,
+  });
 
   @override
   State<DaeSignPostInformationPage> createState() =>
@@ -25,27 +38,13 @@ class DaeSignPostInformationPage extends StatefulWidget {
 class _DaeSignPostInformationPageState
     extends State<DaeSignPostInformationPage> {
   int _selectedTab = 0;
+  final TextEditingController _commentController = TextEditingController();
 
-  static const String _heroImage =
-      'assets/images/Placeholders/pretty_girl.png';
-
-  static const List<Map<String, String>> _comments = [
-    {
-      'name': 'Alyssa',
-      'handle': '@alyssaart',
-      'comment': 'This palette is beautiful. Love the softness.',
-    },
-    {
-      'name': 'Marco',
-      'handle': '@marco_d',
-      'comment': 'The lighting and expression are amazing.',
-    },
-    {
-      'name': 'Nina',
-      'handle': '@nina.sketch',
-      'comment': 'Feels like a dream scene — very expressive.',
-    },
-  ];
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,7 +104,6 @@ class _DaeSignPostInformationPageState
                   children: [
                     const SizedBox(height: 10),
 
-                    // Hero / artwork area
                     SizedBox(
                       height: 520,
                       child: Stack(
@@ -113,16 +111,21 @@ class _DaeSignPostInformationPageState
                           Positioned.fill(
                             child: ClipRect(
                               child: Transform.scale(
-                                scale: 1.15, // zoom in a bit
+                                scale: 1.15,
                                 child: ImageFiltered(
                                   imageFilter: ImageFilter.blur(
                                     sigmaX: 4,
                                     sigmaY: 4,
                                   ),
-                                  child: Image.asset(
-                                    _heroImage,
-                                    fit: BoxFit.cover,
-                                  ),
+                                  child: widget.imageurlAT != null
+                                      ? Image.network(
+                                          widget.imageurlAT!,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) => Container(
+                                            color: Colors.grey.shade300,
+                                          ),
+                                        )
+                                      : Container(color: Colors.grey.shade300),
                                 ),
                               ),
                             ),
@@ -151,19 +154,29 @@ class _DaeSignPostInformationPageState
                                   ),
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(18),
-                                    child: Image.asset(
-                                      _heroImage,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Container(
-                                        color: Colors.grey.shade300,
-                                        alignment: Alignment.center,
-                                        child: const Icon(
-                                          Icons.image,
-                                          size: 56,
-                                          color: Colors.white70,
-                                        ),
-                                      ),
-                                    ),
+                                    child: widget.imageurlAT != null
+                                        ? Image.network(
+                                            widget.imageurlAT!,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) => Container(
+                                              color: Colors.grey.shade300,
+                                              alignment: Alignment.center,
+                                              child: const Icon(
+                                                Icons.image,
+                                                size: 56,
+                                                color: Colors.white70,
+                                              ),
+                                            ),
+                                          )
+                                        : Container(
+                                            color: Colors.grey.shade300,
+                                            alignment: Alignment.center,
+                                            child: const Icon(
+                                              Icons.image,
+                                              size: 56,
+                                              color: Colors.white70,
+                                            ),
+                                          ),
                                   ),
                                 ),
                               ),
@@ -238,7 +251,6 @@ class _DaeSignPostInformationPageState
                     const SizedBox(height: 28),
 
                     if (_selectedTab == 0) ...[
-                      // Artist line
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 44),
                         child: RichText(
@@ -251,7 +263,7 @@ class _DaeSignPostInformationPageState
                             children: [
                               const TextSpan(text: 'Artist: '),
                               TextSpan(
-                                text: '@telenovela',
+                                text: widget.userIdAT ?? 'Unknown',
                                 style: TextStyle(
                                   color: Colors.grey.shade600,
                                   fontWeight: FontWeight.w700,
@@ -263,11 +275,10 @@ class _DaeSignPostInformationPageState
                       ),
                       const SizedBox(height: 22),
 
-                      // Description
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 44),
                         child: Text(
-                          'Drew this based on the women that I met in one of my most memorable lucid dreams. Took me the whole day of when I woke up to process that it was a dream...',
+                          widget.contentAT ?? '',
                           style: textTheme.bodyLarge?.copyWith(
                             fontSize: 18,
                             height: 1.55,
@@ -279,69 +290,157 @@ class _DaeSignPostInformationPageState
                     ] else ...[
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: Column(
-                          children: _comments
-                              .map(
-                                (comment) => Container(
-                              margin: const EdgeInsets.only(bottom: 14),
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: Colors.black12,
-                                    blurRadius: 8,
-                                    offset: Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                                children: [
-                                  const CircleAvatar(
-                                    radius: 22,
-                                    backgroundColor: Colors.black54,
-                                    child: Icon(
-                                      Icons.person,
-                                      color: Colors.white,
+                        child: StreamBuilder<QuerySnapshot>(
+                          stream: FirebaseFirestore.instance
+                              .collection('tbl_comments')
+                              .where('post_idAT', isEqualTo: widget.postId)
+                              .orderBy('createdAT', descending: true)
+                              .snapshots(),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                              return Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: Text(
+                                    'No comments yet',
+                                    style: textTheme.bodyLarge?.copyWith(
+                                      color: Colors.grey.shade600,
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          '${comment['name']}  ${comment['handle']}',
-                                          style:
-                                          textTheme.titleMedium?.copyWith(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w800,
-                                            color: Colors.black,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          comment['comment']!,
-                                          style: textTheme.bodyMedium
-                                              ?.copyWith(
-                                            fontSize: 15,
-                                            height: 1.4,
-                                            color: Colors.grey.shade700,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                ),
+                              );
+                            }
+
+                            var comments = snapshot.data!.docs;
+
+                            return Column(
+                              children: comments.map((comment) {
+                                var commentData = comment.data() as Map<String, dynamic>;
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 14),
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: const [
+                                      BoxShadow(
+                                        color: Colors.black12,
+                                        blurRadius: 8,
+                                        offset: Offset(0, 4),
+                                      ),
+                                    ],
                                   ),
-                                ],
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const CircleAvatar(
+                                        radius: 22,
+                                        backgroundColor: Colors.black54,
+                                        child: Icon(
+                                          Icons.person,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              commentData['user_idAT'] ?? '',
+                                              style: textTheme.titleMedium?.copyWith(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w800,
+                                                color: Colors.black,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              commentData['contentAT'] ?? '',
+                                              style: textTheme.bodyMedium?.copyWith(
+                                                fontSize: 15,
+                                                height: 1.4,
+                                                color: Colors.grey.shade700,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            );
+                          },
+                        ),
+                      ),
+
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _commentController,
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                decoration: InputDecoration(
+                                  hintText: 'Write a comment...',
+                                  hintStyle: textTheme.bodyMedium?.copyWith(
+                                    color: Colors.grey.shade600,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.grey.shade200,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 12,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderSide: BorderSide.none,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
                               ),
                             ),
-                          )
-                              .toList(),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              onPressed: () async {
+                                final text = _commentController.text.trim();
+                                if (text.isEmpty) return;
+
+                                try {
+                                  await FirebaseFirestore.instance
+                                      .collection('tbl_comments')
+                                      .add({
+                                    'post_idAT': widget.postId,
+                                    'user_idAT':
+                                        FirebaseAuth.instance.currentUser?.displayName ??
+                                            "User",
+                                    'contentAT': text,
+                                    'createdAT': FieldValue.serverTimestamp(),
+                                  });
+
+                                  await FirebaseFirestore.instance
+                                      .collection('tbl_posts')
+                                      .doc(widget.postId)
+                                      .update({
+                                    'noofcommentsAT': FieldValue.increment(1),
+                                  });
+
+                                  _commentController.clear();
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text("$e")),
+                                  );
+                                }
+                              },
+                              icon: const Icon(Icons.send, color: Colors.black),
+                            ),
+                          ],
                         ),
                       ),
                     ],

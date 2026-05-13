@@ -2,18 +2,27 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'daesign_drawer.dart';
 import 'daesign_navcircle.dart';
 
 void main() {
-  runApp(const MaterialApp(
+  runApp(MaterialApp(
     debugShowCheckedModeBanner: false,
-    home: DaeSignPostCommentsPage(),
+    home: DaeSignPostCommentsPage(postId: ''),
   ));
 }
 
 class DaeSignPostCommentsPage extends StatefulWidget {
-  const DaeSignPostCommentsPage({super.key});
+  final String postId;
+  final String? imageurlAT;
+
+  const DaeSignPostCommentsPage({
+    super.key,
+    required this.postId,
+    this.imageurlAT,
+  });
 
   @override
   State<DaeSignPostCommentsPage> createState() =>
@@ -22,30 +31,13 @@ class DaeSignPostCommentsPage extends StatefulWidget {
 
 class _DaeSignPostCommentsPageState extends State<DaeSignPostCommentsPage> {
   int _selectedTab = 1;
+  final TextEditingController _commentController = TextEditingController();
 
-  static const String _heroImage =
-      'assets/images/Placeholders/pretty_girl.png';
-
-  static const List<Map<String, dynamic>> _comments = [
-    {
-      'name': 'malevolent_figma',
-      'handle': '@malevolent_figma',
-      'comment': 'This is the girl you meet 5 minutes before you wake up for a 9-5.',
-      'likes': 447,
-    },
-    {
-      'name': 'aintnoway',
-      'handle': '@aintnoway',
-      'comment': 'Glad to know I\'m not the only one having post-dream sadness.',
-      'likes': 234,
-    },
-    {
-      'name': 'alyssa',
-      'handle': '@alyssaart',
-      'comment': 'This palette is beautiful. Love the softness.',
-      'likes': 156,
-    },
-  ];
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,7 +97,6 @@ class _DaeSignPostCommentsPageState extends State<DaeSignPostCommentsPage> {
                   children: [
                     const SizedBox(height: 10),
 
-                    // Hero / artwork area
                     SizedBox(
                       height: 520,
                       child: Stack(
@@ -119,10 +110,15 @@ class _DaeSignPostCommentsPageState extends State<DaeSignPostCommentsPage> {
                                     sigmaX: 4,
                                     sigmaY: 4,
                                   ),
-                                  child: Image.asset(
-                                    _heroImage,
-                                    fit: BoxFit.cover,
-                                  ),
+                                  child: widget.imageurlAT != null
+                                      ? Image.network(
+                                          widget.imageurlAT!,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) => Container(
+                                            color: Colors.grey.shade300,
+                                          ),
+                                        )
+                                      : Container(color: Colors.grey.shade300),
                                 ),
                               ),
                             ),
@@ -150,19 +146,29 @@ class _DaeSignPostCommentsPageState extends State<DaeSignPostCommentsPage> {
                                   ),
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(18),
-                                    child: Image.asset(
-                                      _heroImage,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Container(
-                                        color: Colors.grey.shade300,
-                                        alignment: Alignment.center,
-                                        child: const Icon(
-                                          Icons.image,
-                                          size: 56,
-                                          color: Colors.white70,
-                                        ),
-                                      ),
-                                    ),
+                                    child: widget.imageurlAT != null
+                                        ? Image.network(
+                                            widget.imageurlAT!,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) => Container(
+                                              color: Colors.grey.shade300,
+                                              alignment: Alignment.center,
+                                              child: const Icon(
+                                                Icons.image,
+                                                size: 56,
+                                                color: Colors.white70,
+                                              ),
+                                            ),
+                                          )
+                                        : Container(
+                                            color: Colors.grey.shade300,
+                                            alignment: Alignment.center,
+                                            child: const Icon(
+                                              Icons.image,
+                                              size: 56,
+                                              color: Colors.white70,
+                                            ),
+                                          ),
                                   ),
                                 ),
                               ),
@@ -236,74 +242,146 @@ class _DaeSignPostCommentsPageState extends State<DaeSignPostCommentsPage> {
 
                     const SizedBox(height: 28),
 
-                    // Comments List
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Column(
-                        children: _comments
-                            .map(
-                              (comment) => Padding(
-                            padding: const EdgeInsets.only(bottom: 24),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
+                      child: StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('tbl_comments')
+                            .where('post_idAT', isEqualTo: widget.postId)
+                            .orderBy('createdAT', descending: true)
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                            return Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: Text(
+                                  'No comments yet',
+                                  style: textTheme.bodyLarge?.copyWith(
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+
+                          var comments = snapshot.data!.docs;
+
+                          return Column(
+                            children: comments.map((comment) {
+                              var commentData = comment.data() as Map<String, dynamic>;
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 24),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Column(
-                                      crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text(
-                                          comment['handle'],
-                                          style: textTheme.titleMedium
-                                              ?.copyWith(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w800,
-                                            color: Colors.grey.shade600,
-                                          ),
+                                        Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              commentData['user_idAT'] ?? '',
+                                              style: textTheme.titleMedium?.copyWith(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w800,
+                                                color: Colors.grey.shade600,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
-                                    Row(
-                                      children: [
-                                        const Icon(Icons.thumb_up,
-                                            size: 18, color: Colors.black),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          comment['likes'].toString(),
-                                          style: textTheme.bodyMedium
-                                              ?.copyWith(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w700,
-                                            color: Colors.black,
-                                          ),
-                                        ),
-                                      ],
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      commentData['contentAT'] ?? '',
+                                      style: textTheme.bodyLarge?.copyWith(
+                                        fontSize: 16,
+                                        height: 1.5,
+                                        color: Colors.grey.shade700,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Container(
+                                      height: 1,
+                                      color: Colors.grey.shade300,
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  comment['comment']!,
-                                  style: textTheme.bodyLarge?.copyWith(
-                                    fontSize: 16,
-                                    height: 1.5,
-                                    color: Colors.grey.shade700,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                              );
+                            }).toList(),
+                          );
+                        },
+                      ),
+                    ),
+
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _commentController,
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: Colors.black,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'Write a comment...',
+                                hintStyle: textTheme.bodyMedium?.copyWith(
+                                  color: Colors.grey.shade600,
+                                  fontWeight: FontWeight.w600,
                                 ),
-                                const SizedBox(height: 12),
-                                Container(
-                                  height: 1,
-                                  color: Colors.grey.shade300,
+                                filled: true,
+                                fillColor: Colors.grey.shade200,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 12,
                                 ),
-                              ],
+                                border: OutlineInputBorder(
+                                  borderSide: BorderSide.none,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
                             ),
                           ),
-                        )
-                            .toList(),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            onPressed: () async {
+                              final text = _commentController.text.trim();
+                              if (text.isEmpty) return;
+
+                              try {
+                                await FirebaseFirestore.instance
+                                    .collection('tbl_comments')
+                                    .add({
+                                  'post_idAT': widget.postId,
+                                  'user_idAT':
+                                      FirebaseAuth.instance.currentUser?.displayName ??
+                                          "User",
+                                  'contentAT': text,
+                                  'createdAT': FieldValue.serverTimestamp(),
+                                });
+
+                                await FirebaseFirestore.instance
+                                    .collection('tbl_posts')
+                                    .doc(widget.postId)
+                                    .update({
+                                  'noofcommentsAT': FieldValue.increment(1),
+                                });
+
+                                _commentController.clear();
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text("$e")),
+                                );
+                              }
+                            },
+                            icon: const Icon(Icons.send, color: Colors.black),
+                          ),
+                        ],
                       ),
                     ),
 

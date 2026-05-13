@@ -1,8 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'daesign_loading.dart';
+import 'daesign_home.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,6 +42,8 @@ class Post extends StatefulWidget {
 
 class _PostState extends State<Post> {
   var postController = TextEditingController();
+
+  File? selectedImage;
 
   @override
   Widget build(BuildContext context) {
@@ -76,16 +84,16 @@ class _PostState extends State<Post> {
                         children: [
 
                           Row(
-                            children: const [
-                              CircleAvatar(
+                            children: [
+                              const CircleAvatar(
                                 radius: 22,
                                 backgroundColor: Colors.grey,
                                 child: Icon(Icons.person, color: Colors.white),
                               ),
-                              SizedBox(width: 10),
+                              const SizedBox(width: 10),
                               Text(
-                                "Your Name",
-                                style: TextStyle(
+                                FirebaseAuth.instance.currentUser?.displayName ?? "User",
+                                style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
                                 ),
@@ -111,24 +119,50 @@ class _PostState extends State<Post> {
 
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: const [
-                              Row(
-                                children: [
-                                  Icon(Icons.photo, color: Colors.green),
-                                  SizedBox(width: 5),
-                                  Text("Photo"),
-                                ],
+                            children: [
+                              InkWell(
+                                onTap: () async {
+                                  final pickedImage = await ImagePicker()
+                                      .pickImage(source: ImageSource.gallery);
+
+                                  if (pickedImage != null) {
+                                    setState(() {
+                                      selectedImage = File(pickedImage.path);
+                                    });
+                                  }
+                                },
+                                child: const Row(
+                                  children: [
+                                    Icon(Icons.photo, color: Colors.green),
+                                    SizedBox(width: 5),
+                                    Text("Photo"),
+                                  ],
+                                ),
                               ),
-                              Row(
+
+                              const Row(
                                 children: [
                                   Icon(Icons.videocam, color: Colors.red),
                                   SizedBox(width: 5),
                                   Text("Video"),
                                 ],
                               ),
-
                             ],
-                          )
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          selectedImage == null
+                              ? const SizedBox()
+                              : ClipRRect(
+                                  borderRadius: BorderRadius.circular(15),
+                                  child: Image.file(
+                                    selectedImage!,
+                                    height: 200,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
                         ],
                       ),
                     ),
@@ -149,24 +183,52 @@ class _PostState extends State<Post> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                onPressed: () {
+                onPressed: () async {
+                  try {
+                    var content = postController.text;
 
-                  var content = postController.text;
-                  FirebaseFirestore.instance.collection('tbl_Post').add(
-                    {
-                      'contentAT' : content,
-                      'user_idAT' :'dr,dre',
-                      'nooflikeAT' : 0,
-                      'noofcommentsAT' : 0,
-                      'createdAT' : FieldValue.serverTimestamp()
+                    String? uploadedImageUrl;
 
+                    if (selectedImage != null) {
+                      String fileName =
+                          DateTime.now().millisecondsSinceEpoch.toString();
+
+                      Reference storageRef = FirebaseStorage.instance
+                          .ref()
+                          .child("post_images")
+                          .child("$fileName.jpg");
+
+                      await storageRef.putFile(selectedImage!);
+
+                      uploadedImageUrl = await storageRef.getDownloadURL();
                     }
-                  );
 
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Post submitted')),
-                  );
+                    await FirebaseFirestore.instance.collection('tbl_posts').add({
+                      'contentAT': content,
+                      'imageurlAT': uploadedImageUrl,
+                      'createdAT': FieldValue.serverTimestamp(),
+                      'user_idAT':
+                          FirebaseAuth.instance.currentUser?.displayName ??
+                              "User",
+                      'nooflikeAT': 0,
+                      'noofcommentsAT': 0,
+                    });
 
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Post submitted')),
+                    );
+
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const DaeSignHomePage(),
+                      ),
+                    );
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("$e")),
+                    );
+                  }
                 },
                 child: const Text(
                   "Post",

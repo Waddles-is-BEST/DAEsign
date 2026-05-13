@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'main.dart';
 
 void main() async {
@@ -80,6 +81,22 @@ class ViewPostsPage extends StatelessWidget {
     );
   }
 
+  Widget perimage(String? imageUrl) {
+    if (imageUrl == null) return const SizedBox();
+    return Padding(
+      padding: const EdgeInsets.only(top: 15),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(15),
+        child: Image.network(
+          imageUrl,
+          height: 220,
+          width: double.infinity,
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -110,9 +127,9 @@ class ViewPostsPage extends StatelessWidget {
                       child: Icon(Icons.person),
                     ),
                     const SizedBox(height: 10),
-                    const Text("Profile Name"),
-                    const Text(
-                      "Email",
+                    Text(FirebaseAuth.instance.currentUser?.displayName ?? "User"),
+                    Text(
+                      FirebaseAuth.instance.currentUser?.email ?? "",
                     ),
                   ],
                 ),
@@ -179,7 +196,7 @@ class ViewPostsPage extends StatelessWidget {
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
-                    .collection('tbl_Post')
+                    .collection('tbl_posts')
                     .orderBy('createdAT', descending: true)
                     .limit(50)
                     .snapshots(),
@@ -270,6 +287,7 @@ class ViewPostsPage extends StatelessWidget {
                             SizedBox(height: 15),
                             percontent(postData['contentAT'] as String?),
 
+                            perimage(postData['imageurlAT'] as String?),
 
                             SizedBox(height: 15),
                             Row(

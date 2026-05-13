@@ -1,7 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'daesign_drawer.dart';
 import 'daesign_navcircle.dart';
+import 'daesign_home.dart';
 
 void main() {
   runApp(const MaterialApp(
@@ -22,6 +29,8 @@ class _DaeSignCreatePageState extends State<DaeSignCreatePage> {
   final TextEditingController _tagsController = TextEditingController();
   final FocusNode _infoFocus = FocusNode();
   final FocusNode _tagsFocus = FocusNode();
+
+  File? selectedImage;
 
   @override
   void dispose() {
@@ -96,20 +105,36 @@ class _DaeSignCreatePageState extends State<DaeSignCreatePage> {
                     // Top image placeholder (square)
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 28),
-                      child: Container(
-                        width: deviceWidth - 56,
-                        // Ensure square
-                        height: deviceWidth - 56,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: Colors.black, width: 3),
-                        ),
-                        child: Center(
-                          child: Icon(
-                            Icons.add_photo_alternate_outlined,
-                            size: 140,
-                            color: const Color(0xFF737373), // #737373
+                      child: GestureDetector(
+                        onTap: () async {
+                          final pickedImage = await ImagePicker()
+                              .pickImage(source: ImageSource.gallery);
+
+                          if (pickedImage != null) {
+                            setState(() {
+                              selectedImage = File(pickedImage.path);
+                            });
+                          }
+                        },
+                        child: Container(
+                          width: deviceWidth - 56,
+                          height: deviceWidth - 56,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(color: Colors.black, width: 3),
                           ),
+                          child: selectedImage != null
+                              ? Image.file(
+                                  selectedImage!,
+                                  fit: BoxFit.cover,
+                                )
+                              : Center(
+                                  child: Icon(
+                                    Icons.add_photo_alternate_outlined,
+                                    size: 140,
+                                    color: const Color(0xFF737373),
+                                  ),
+                                ),
                         ),
                       ),
                     ),
@@ -240,8 +265,11 @@ class _DaeSignCreatePageState extends State<DaeSignCreatePage> {
                               onPressed: () {
                                 _infoController.clear();
                                 _tagsController.clear();
+                                setState(() {
+                                  selectedImage = null;
+                                });
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Cleared (front-end only)')),
+                                  const SnackBar(content: Text('Cleared')),
                                 );
                               },
                               style: ElevatedButton.styleFrom(
@@ -265,13 +293,54 @@ class _DaeSignCreatePageState extends State<DaeSignCreatePage> {
                           const SizedBox(width: 18),
                           Expanded(
                             child: ElevatedButton(
-                              onPressed: () {
-                                // front-end only: show values
-                                final info = _infoController.text.trim();
-                                final tags = _tagsController.text.trim();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Create Post (front-end only)\nInfo: $info\nTags: $tags')),
-                                );
+                              onPressed: () async {
+                                try {
+                                  final info = _infoController.text.trim();
+                                  final tags = _tagsController.text.trim();
+
+                                  String? uploadedImageUrl;
+
+                                  if (selectedImage != null) {
+                                    String fileName =
+                                        DateTime.now().millisecondsSinceEpoch.toString();
+
+                                    Reference storageRef = FirebaseStorage.instance
+                                        .ref()
+                                        .child("post_images")
+                                        .child("$fileName.jpg");
+
+                                    await storageRef.putFile(selectedImage!);
+
+                                    uploadedImageUrl = await storageRef.getDownloadURL();
+                                  }
+
+                                  await FirebaseFirestore.instance.collection('tbl_posts').add({
+                                    'contentAT': info,
+                                    'tagsAT': tags,
+                                    'imageurlAT': uploadedImageUrl,
+                                    'createdAT': FieldValue.serverTimestamp(),
+                                    'user_idAT':
+                                        FirebaseAuth.instance.currentUser?.displayName ??
+                                            "User",
+                                    'nooflikeAT': 0,
+                                    'noofcommentsAT': 0,
+                                  });
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Post submitted')),
+                                  );
+
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const DaeSignHomePage(),
+                                    ),
+                                  );
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text("$e")),
+                                  );
+                                }
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.green.shade600,

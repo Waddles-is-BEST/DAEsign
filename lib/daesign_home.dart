@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'daesign_drawer.dart';
 import 'daesign_navcircle.dart';
 import 'services/auth_service.dart';
 import 'daesign_login.dart';
 import 'daesign_profile.dart';
+import 'daesign_create.dart';
+import 'daesign_search.dart';
+import 'daesign_post_information.dart';
 
 void main() {
   runApp(const MaterialApp(
@@ -41,41 +45,6 @@ class _DaeSignHomePageState extends State<DaeSignHomePage> {
     },
   ];
 
-  static final List<Map<String, dynamic>> samplePosts = [
-    {
-      'title': 'Remembering Steve',
-      'author': '@apolover',
-      'image': 'assets/images/Placeholders/steve_jobs.png',
-      'likes': 298,
-      'comments': 254,
-      'views': 3454,
-    },
-    {
-      'title': 'The Girl in my dream',
-      'author': '@telenov...',
-      'image': 'assets/images/Placeholders/pretty_girl.png',
-      'likes': 298,
-      'comments': 254,
-      'views': 3454,
-    },
-    {
-      'title': 'Portrait Study',
-      'author': '@artlover',
-      'image': 'assets/images/Placeholders/pink_girl.png',
-      'likes': 120,
-      'comments': 41,
-      'views': 980,
-    },
-    {
-      'title': 'Floral Dream',
-      'author': '@flower',
-      'image': 'assets/images/Placeholders/pretty_girl.png',
-      'likes': 77,
-      'comments': 14,
-      'views': 600,
-    },
-  ];
-
   Future<void> _handleDrawerItemTap(DaeSignDrawerItem item) async {
     switch (item) {
       case DaeSignDrawerItem.signOut:
@@ -87,11 +56,20 @@ class _DaeSignHomePageState extends State<DaeSignHomePage> {
           MaterialPageRoute(builder: (context) => const DaeSignProfilePage()),
         );
         break;
-      case DaeSignDrawerItem.home:
       case DaeSignDrawerItem.createPost:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DaeSignCreatePage()),
+        );
+        break;
       case DaeSignDrawerItem.search:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DaeSignSearchPage()),
+        );
+        break;
+      case DaeSignDrawerItem.home:
       case DaeSignDrawerItem.notifications:
-        // Handle other items
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('${item.toString().split('.').last} tapped')),
         );
@@ -279,27 +257,62 @@ class _DaeSignHomePageState extends State<DaeSignHomePage> {
 
                     const SizedBox(height: 12),
 
-                    // Responsive two-column posts grid (Wrap)
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 14),
-                      child: Wrap(
-                        runSpacing: 18,
-                        spacing: 14,
-                        children: samplePosts.map((post) {
-                          final cardWidth = (deviceWidth - 14 * 2 - 14) / 2;
-                          return SizedBox(
-                            width: cardWidth,
-                            child: _PostCard(
-                              title: post['title'] as String,
-                              author: post['author'] as String,
-                              imageAsset: post['image'] as String,
-                              likes: post['likes'] as int,
-                              comments: post['comments'] as int,
-                              views: post['views'] as int,
-                              textTheme: textTheme,
-                            ),
+                      child: StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('tbl_posts')
+                            .orderBy('createdAT', descending: true)
+                            .limit(50)
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(20),
+                                child: CircularProgressIndicator(),
+                              ),
+                            );
+                          }
+
+                          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                            return Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: Text(
+                                  'No posts yet',
+                                  style: textTheme.bodyLarge?.copyWith(
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+
+                          var posts = snapshot.data!.docs;
+
+                          return Wrap(
+                            runSpacing: 18,
+                            spacing: 14,
+                            children: posts.map((post) {
+                              var postData = post.data() as Map<String, dynamic>;
+                              final cardWidth = (deviceWidth - 14 * 2 - 14) / 2;
+                              return SizedBox(
+                                width: cardWidth,
+                                child: _PostCard(
+                                  title: postData['contentAT'] ?? '',
+                                  author: postData['user_idAT'] ?? '',
+                                  imageUrl: postData['imageurlAT'] as String?,
+                                  likes: postData['nooflikeAT'] ?? 0,
+                                  comments: postData['noofcommentsAT'] ?? 0,
+                                  views: 0,
+                                  textTheme: textTheme,
+                                  postId: post.id,
+                                ),
+                              );
+                            }).toList(),
                           );
-                        }).toList(),
+                        },
                       ),
                     ),
                   ],
@@ -328,11 +341,21 @@ class _DaeSignHomePageState extends State<DaeSignHomePage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       DaeSignNavCircle(icon: Icons.home, label: 'Home', selected: true, onTap: () {}),
-                      SizedBox(width: 16),  // ADD: spacing between icons
-                      DaeSignNavCircle(icon: Icons.add, label: 'Add', onTap: () {}),
-                      SizedBox(width: 16),  // ADD: spacing
-                      DaeSignNavCircle(icon: Icons.search, label: 'Search', onTap: () {}),
-                      SizedBox(width: 16),  // ADD: spacing
+                      SizedBox(width: 16),
+                      DaeSignNavCircle(icon: Icons.add, label: 'Add', onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const DaeSignCreatePage()),
+                        );
+                      }),
+                      SizedBox(width: 16),
+                      DaeSignNavCircle(icon: Icons.search, label: 'Search', onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const DaeSignSearchPage()),
+                        );
+                      }),
+                      SizedBox(width: 16),
                       DaeSignNavCircle(icon: Icons.notifications, label: 'Alerts', onTap: () {}),
                     ],
                   ),
@@ -409,33 +432,36 @@ class _PostCard extends StatelessWidget {
   const _PostCard({
     required this.title,
     required this.author,
-    required this.imageAsset,
+    this.imageUrl,
     required this.likes,
     required this.comments,
     required this.views,
     required this.textTheme,
+    this.postId,
   });
 
   final String title;
   final String author;
-  final String imageAsset;
+  final String? imageUrl;
   final int likes;
   final int comments;
   final int views;
   final TextTheme textTheme;
+  final String? postId;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
-        showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: Text(title),
-            content: Text('Open post by $author (front-end only)'),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
-            ],
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DaeSignPostInformationPage(
+              postId: postId ?? '',
+              imageurlAT: imageUrl,
+              contentAT: title,
+              userIdAT: author,
+            ),
           ),
         );
       },
@@ -451,19 +477,23 @@ class _PostCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Post image — slightly taller look, rounded top corners
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               child: AspectRatio(
                 aspectRatio: 3 / 4,
-                child: Image.asset(
-                  imageAsset,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    color: Colors.grey.shade300,
-                    child: const Icon(Icons.image, size: 48, color: Colors.white70),
-                  ),
-                ),
+                child: imageUrl != null
+                    ? Image.network(
+                        imageUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: Colors.grey.shade300,
+                          child: const Icon(Icons.image, size: 48, color: Colors.white70),
+                        ),
+                      )
+                    : Container(
+                        color: Colors.grey.shade300,
+                        child: const Icon(Icons.image, size: 48, color: Colors.white70),
+                      ),
               ),
             ),
 
