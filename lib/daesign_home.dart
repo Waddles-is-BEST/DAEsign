@@ -10,6 +10,7 @@ import 'daesign_create.dart';
 import 'daesign_search.dart';
 import 'daesign_post_information.dart';
 import 'services/likes_service.dart';
+import 'daesign_category.dart';
 
 
 void main() {
@@ -35,27 +36,25 @@ class _DaeSignHomePageState extends State<DaeSignHomePage> {
       'title': 'Classical Art',
       'subtitle': 'Vincent Van Gogh - Starry Night',
       'image': 'assets/images/Explore/starry_night.png',
-      'likes': 342,
-      'comments': 89,
-      'tags': ['classical', 'impressionism', 'masterpiece'],
+      'description':
+      'Classic art refers to traditional artistic styles rooted in balance, realism, harmony, and timeless beauty, often inspired by ancient Greek and Roman ideals.',
     },
     {
       'title': 'Anime Art',
       'subtitle': 'AkiraRosuki - Paint',
       'image': 'assets/images/Explore/anime_girl.png',
-      'likes': 521,
-      'comments': 143,
-      'tags': ['anime', 'digital', 'character-art'],
+      'description':
+      'Anime art focuses on expressive characters, bright palettes, and stylized visuals inspired by Japanese animation and illustration.',
     },
     {
       'title': 'Digital',
       'subtitle': 'Contemporary Works',
       'image': 'assets/images/Explore/starry_night.png',
-      'likes': 198,
-      'comments': 52,
-      'tags': ['digital', 'contemporary', 'modern'],
+      'description':
+      'Digital art includes modern creative work produced with digital tools, from concept art to experimental mixed-media visuals.',
     },
   ];
+
 
 
   @override
@@ -170,22 +169,19 @@ class _DaeSignHomePageState extends State<DaeSignHomePage> {
                               width: totalWidth,
                               child: GestureDetector(
                                 onTap: () {
-                                  // Navigate to explore details page
-                                  showModalBottomSheet(
-                                    context: context,
-                                    isScrollControlled: true,
-                                    backgroundColor: Colors.transparent,
-                                    builder: (context) => _ExploreDetailsSheet(
-                                      title: item['title'],
-                                      subtitle: item['subtitle'],
-                                      image: item['image'],
-                                      likes: item['likes'],
-                                      comments: item['comments'],
-                                      tags: item['tags'],
-                                      textTheme: textTheme,
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => DaeSignCategoryPage(
+                                        title: item['title'] as String,
+                                        subtitle: item['subtitle'] as String,
+                                        bannerAsset: item['image'] as String,
+                                        description: item['description'] as String,
+                                      ),
                                     ),
                                   );
                                 },
+
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -219,14 +215,6 @@ class _DaeSignHomePageState extends State<DaeSignHomePage> {
                                       textAlign: TextAlign.center,
                                     ),
                                     const SizedBox(height: 6),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        _Stat(icon: Icons.thumb_up_alt_outlined, value: item['likes'] ?? 0),
-                                        const SizedBox(width: 12),
-                                        _Stat(icon: Icons.comment_outlined, value: item['comments'] ?? 0),
-                                      ],
-                                    ),
                                   ],
                                 ),
                               ),
