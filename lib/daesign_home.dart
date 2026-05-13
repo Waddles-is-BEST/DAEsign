@@ -138,9 +138,30 @@ class _DaeSignHomePageState extends State<DaeSignHomePage> {
                   MaterialPageRoute(builder: (context) => const DaeSignProfilePage()),
                 );
               },
-              child: const CircleAvatar(
+              child: CircleAvatar(
                 radius: 18,
                 backgroundColor: Colors.black54,
+                child: authService.currentUser?.photoURL != null
+                    ? ClipOval(
+                        child: Image.network(
+                          authService.currentUser!.photoURL!,
+                          fit: BoxFit.cover,
+                          width: 36,
+                          height: 36,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Icon(
+                              Icons.person,
+                              size: 18,
+                              color: Colors.white,
+                            );
+                          },
+                        ),
+                      )
+                    : const Icon(
+                        Icons.person,
+                        size: 18,
+                        color: Colors.white,
+                      ),
               ),
             ),
           )

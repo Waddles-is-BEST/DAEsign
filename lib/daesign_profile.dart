@@ -64,6 +64,10 @@ class _DaeSignProfilePageState extends State<DaeSignProfilePage> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Text(
           'Profile',
           style: GoogleFonts.inter(

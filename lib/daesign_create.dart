@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'services/r2_service.dart';
 import 'daesign_drawer.dart';
 import 'daesign_navcircle.dart';
 import 'daesign_home.dart';
@@ -304,14 +304,7 @@ class _DaeSignCreatePageState extends State<DaeSignCreatePage> {
                                     String fileName =
                                         DateTime.now().millisecondsSinceEpoch.toString();
 
-                                    Reference storageRef = FirebaseStorage.instance
-                                        .ref()
-                                        .child("post_images")
-                                        .child("$fileName.jpg");
-
-                                    await storageRef.putFile(selectedImage!);
-
-                                    uploadedImageUrl = await storageRef.getDownloadURL();
+                                    uploadedImageUrl = await R2Service.uploadImage(selectedImage!, fileName);
                                   }
 
                                   await FirebaseFirestore.instance.collection('tbl_posts').add({
